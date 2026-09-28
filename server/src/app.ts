@@ -48,12 +48,21 @@ export function createApp(office: Office) {
     res.json(office.cancelTask(req.params.id));
   });
 
+  app.post("/api/tasks/:id/approve", (req, res) => {
+    res.json(office.approveTask(req.params.id));
+  });
+
+  app.post("/api/tasks/:id/revise", (req, res) => {
+    const feedback = typeof req.body?.feedback === "string" ? req.body.feedback : "";
+    res.json(office.reviseTask(req.params.id, feedback));
+  });
+
   app.post("/api/external/report", (req, res) => {
     res.json(office.reportExternal(req.body ?? {}));
   });
 
-  // In production, serve the built web app from the same origin.
-  const webDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web/dist");
+  // Serve the office dashboard (dist/) from the same origin as the API.
+  const webDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../dist");
   if (existsSync(webDist)) {
     app.use(express.static(webDist));
     app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(path.join(webDist, "index.html")));

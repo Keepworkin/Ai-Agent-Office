@@ -1,14 +1,27 @@
 # Agent Office — live server
 
-Backend for the office. It runs agents on **Claude** (Anthropic SDK) and **ChatGPT** (OpenAI Responses API) and streams every step to the browser. API keys stay on the server.
+Backend for the office. It runs the six teammates on **Claude** (Anthropic SDK) and **ChatGPT** (OpenAI Responses API) and streams every step to the browser. It also serves the dashboard in `../dist` on the same port. API keys stay on the server.
 
-## Run
+## Run (from the repo root)
 
 ```sh
 cp .env.example .env   # add ANTHROPIC_API_KEY / OPENAI_API_KEY (optional)
 npm install
-npm run dev            # server on :8787, React office on :5173
+npm run dev            # API + dashboard on http://localhost:8787
 ```
+
+## Team
+
+| Id | Name | Role | Runs on |
+|---|---|---|---|
+| `atlas` | Atlas | Research | ChatGPT |
+| `nova` | Nova | Design | ChatGPT |
+| `sage` | Sage | Analytics | ChatGPT |
+| `byte` | Byte | Engineering | Claude |
+| `quill` | Quill | Writing | Claude |
+| `orbit` | Orbit | Operations | Claude |
+
+Ids match the robots in `dist/app.js`. Models come from `CLAUDE_MODEL` (default `claude-opus-5-5`) and `OPENAI_MODEL` (default `gpt-5`).
 
 A provider with no key runs in **mock mode**, so everything works offline. Set `MOCK_PROVIDERS=true` to force mock mode everywhere.
 
@@ -18,10 +31,12 @@ A **workflow** is a list of stages. Agents in the same stage work in parallel, a
 
 | Workflow | Stages |
 |---|---|
-| Claude builds → ChatGPT reviews | Cody → Rex |
-| ChatGPT researches → Claude builds | Gemma → Cody |
-| Head to head | Cody + Gemma side by side → Clara compares |
-| Full team | Clara → Gemma + Cody → Rex |
+| Claude writes → ChatGPT checks | Quill → Sage |
+| ChatGPT researches → Claude builds | Atlas → Byte |
+| Head to head | Quill + Atlas side by side → Orbit compares |
+| Full team | Atlas + Nova → Byte → Orbit |
+
+When the last stage finishes, the task waits in **review** (its final-stage agents show `status: "review"`). Approve it, or request a revision: that re-runs only the final stage, which sees its previous draft and your feedback.
 
 The roster and workflows live in `src/office/roster.ts`.
 
@@ -32,6 +47,8 @@ The roster and workflows live in `src/office/roster.ts`.
 | GET | `/api/office` | Snapshot: agents, tasks, workflows, activity |
 | GET | `/api/events` | Server-sent events: `snapshot`, then `agent`, `task`, `delta`, `activity` |
 | POST | `/api/tasks` | `{ prompt, title?, workflowId? , stages? }` |
+| POST | `/api/tasks/:id/approve` | Accept work in review |
+| POST | `/api/tasks/:id/revise` | `{ feedback }`: re-run the final stage with feedback |
 | POST | `/api/tasks/:id/cancel` | Cancel a running task |
 | POST | `/api/external/report` | `{ agentId, kind: "codex" \| "claude-code", status?, message? }`: puts an external coding agent on the office floor |
 
@@ -51,6 +68,5 @@ You can wire this into Claude Code hooks or Codex's `notify` setting so their se
 ## Test
 
 ```sh
-npm test         # orchestrator tests with a fake provider (no API calls)
-npm run typecheck
+npm run check:server   # from the repo root: typecheck + orchestrator tests (fake provider, no API calls)
 ```

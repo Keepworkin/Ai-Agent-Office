@@ -81,7 +81,9 @@ export class Office {
       prompt,
       workflowId: workflow?.id ?? null,
       status: "queued",
+      progress: 0,
       steps: stages.flatMap((agents, stage) => agents.map((agentId) => newStep(agentId, stage))),
+      feedback: [],
       createdAt: now(),
       finishedAt: null,
     };
@@ -90,15 +92,52 @@ export class Office {
     this.emitTask(task);
     this.log(`New task: "${task.title}"`, { taskId: task.id });
 
+    this.start(task, 0);
+    return task;
+  }
+
+  /** Marks work in review as accepted. Frees the agents waiting on it. */
+  approveTask(id: string): Task {
+    const task = this.requireTask(id);
+    if (task.status !== "review") throw new OfficeError(`task is ${task.status}, not waiting for review`, 409);
+    task.status = "done";
+    task.finishedAt = now();
+    this.emitTask(task);
+    this.log(`Approved: "${task.title}"`, { taskId: id });
+    this.refreshResting(task);
+    return task;
+  }
+
+  /** Sends work in review back to the final stage's agents with the manager's feedback. */
+  reviseTask(id: string, feedback = ""): Task {
+    const task = this.requireTask(id);
+    if (task.status !== "review") throw new OfficeError(`task is ${task.status}, not waiting for review`, 409);
+    const lastStage = finalStage(task);
+    task.feedback.push(feedback.trim() || "Please revise and improve your previous draft.");
+    task.status = "in_progress";
+    task.finishedAt = null;
+    for (const step of task.steps.filter((s) => s.stage === lastStage)) {
+      Object.assign(step, newStep(step.agentId, step.stage), { previousOutput: step.output });
+    }
+    this.log(`Revision requested: "${task.title}"`, { taskId: id });
+    this.start(task, lastStage);
+    return task;
+  }
+
+  private start(task: Task, fromStage: number) {
     const controller = new AbortController();
     this.aborts.set(task.id, controller);
-    void this.runTask(task, controller.signal);
+    void this.runTask(task, controller.signal, fromStage);
+  }
+
+  private requireTask(id: string): Task {
+    const task = this.tasks.get(id);
+    if (!task) throw new OfficeError(`unknown task: ${id}`, 404);
     return task;
   }
 
   cancelTask(id: string): Task {
-    const task = this.tasks.get(id);
-    if (!task) throw new OfficeError(`unknown task: ${id}`, 404);
+    const task = this.requireTask(id);
     if (task.status === "queued" || task.status === "in_progress") {
       this.aborts.get(id)?.abort();
       task.status = "cancelled";
@@ -114,7 +153,7 @@ export class Office {
 
   /** Resolves when the task reaches a terminal state. Useful in tests and scripts. */
   waitForTask(id: string): Promise<Task> {
-    const done = (t: Task | undefined) => t && ["done", "failed", "cancelled"].includes(t.status);
+    const done = (t: Task | undefined) => t && ["review", "done", "failed", "cancelled"].includes(t.status);
     const existing = this.tasks.get(id);
     if (done(existing)) return Promise.resolve(existing!);
     return new Promise((resolve) => {
@@ -127,10 +166,10 @@ export class Office {
     });
   }
 
-  private async runTask(task: Task, signal: AbortSignal) {
-    const stageCount = Math.max(...task.steps.map((s) => s.stage)) + 1;
+  private async runTask(task: Task, signal: AbortSignal, fromStage: number) {
+    const stageCount = finalStage(task) + 1;
     try {
-      for (let stage = 0; stage < stageCount; stage++) {
+      for (let stage = fromStage; stage < stageCount; stage++) {
         if (signal.aborted) return;
         const steps = task.steps.filter((s) => s.stage === stage);
         const context = this.buildPrompt(task, stage);
@@ -140,8 +179,8 @@ export class Office {
           throw new OfficeError(`every agent in stage ${stage + 1} failed`);
         }
       }
-      task.status = "done";
-      this.log(`Task finished: "${task.title}"`, { taskId: task.id });
+      task.status = "review";
+      this.log(`Ready for your review: "${task.title}"`, { taskId: task.id });
     } catch (err) {
       if (signal.aborted) return;
       task.status = "failed";
@@ -152,6 +191,7 @@ export class Office {
       if (!signal.aborted) {
         task.finishedAt = now();
         this.emitTask(task);
+        this.refreshResting(task);
       }
     }
   }
@@ -199,14 +239,42 @@ export class Office {
     } finally {
       step.finishedAt = now();
       this.emitTask(task);
-      this.updateAgent(agent, { status: "idle", currentTaskId: null, activity: null });
+      this.updateAgent(agent, { status: this.restingStatus(agent.id), currentTaskId: null, activity: null });
     }
   }
 
-  /** The original request plus everything earlier stages produced. */
+  /** What an agent does when not working: waits on review, or is free. */
+  private restingStatus(agentId: string): AgentState["status"] {
+    const inReview = [...this.tasks.values()].some(
+      (t) => t.status === "review" && t.steps.some((s) => s.agentId === agentId && s.stage === finalStage(t)),
+    );
+    return inReview ? "review" : "idle";
+  }
+
+  private refreshResting(task: Task) {
+    for (const agentId of new Set(task.steps.map((s) => s.agentId))) {
+      const agent = this.agents.get(agentId)!;
+      if (agent.status !== "working") {
+        const status = this.restingStatus(agentId);
+        if (agent.status !== status) this.updateAgent(agent, { status });
+      }
+    }
+  }
+
+  /** The original request, everything earlier stages produced, and any manager feedback. */
   private buildPrompt(task: Task, stage: number): string {
     const earlier = task.steps.filter((s) => s.stage < stage && s.status === "done");
-    if (!earlier.length) return task.prompt;
+    const drafts = task.steps.filter((s) => s.stage === stage && s.previousOutput);
+    const feedback = stage === finalStage(task) && task.feedback.length
+      ? [
+          "",
+          ...drafts.map((s) => `## Previous draft by ${this.agents.get(s.agentId)!.name}\n\n${s.previousOutput}`),
+          "",
+          "## Manager feedback — revise the previous draft accordingly",
+          ...task.feedback.map((f, i) => `${i + 1}. ${f}`),
+        ]
+      : [];
+    if (!earlier.length) return feedback.length ? [task.prompt, ...feedback].join("\n") : task.prompt;
     const handoffs = earlier.map((s) => {
       const a = this.agents.get(s.agentId)!;
       return `### From ${a.name} (${a.role}, ${providerLabel(a.provider)})\n\n${s.output}`;
@@ -220,6 +288,7 @@ export class Office {
       "",
       "## Your turn",
       "Build on your teammates' work according to your role.",
+      ...feedback,
     ].join("\n");
   }
 
@@ -304,6 +373,7 @@ export class Office {
   }
 
   private emitTask(task: Task) {
+    task.progress = taskProgress(task);
     this.emit({ type: "task", task });
   }
 
@@ -327,12 +397,24 @@ function newStep(agentId: string, stage: number): TaskStep {
     stage,
     status: "pending",
     output: "",
+    previousOutput: null,
     error: null,
     startedAt: null,
     finishedAt: null,
     inputTokens: 0,
     outputTokens: 0,
   };
+}
+
+function finalStage(task: Task): number {
+  return Math.max(...task.steps.map((s) => s.stage));
+}
+
+function taskProgress(task: Task): number {
+  if (task.status === "review" || task.status === "done") return 100;
+  const weight = { pending: 0, working: 0.5, done: 1, failed: 1, skipped: 1 } as const;
+  const sum = task.steps.reduce((n, s) => n + weight[s.status], 0);
+  return Math.round((sum / task.steps.length) * 100);
 }
 
 function providerLabel(provider: AgentConfig["provider"]) {

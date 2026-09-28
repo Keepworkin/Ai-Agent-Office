@@ -3,7 +3,8 @@
 
 export type ProviderId = "anthropic" | "openai" | "external";
 
-export type AgentStatus = "idle" | "working" | "waiting" | "offline";
+/** "review" means the agent has finished work waiting for the manager's approval. */
+export type AgentStatus = "idle" | "working" | "review" | "waiting" | "offline";
 
 export interface AgentConfig {
   id: string;
@@ -46,6 +47,8 @@ export interface TaskStep {
   stage: number;
   status: StepStatus;
   output: string;
+  /** The output this step produced before the latest revision request. */
+  previousOutput: string | null;
   error: string | null;
   startedAt: string | null;
   finishedAt: string | null;
@@ -53,7 +56,8 @@ export interface TaskStep {
   outputTokens: number;
 }
 
-export type TaskStatus = "queued" | "in_progress" | "done" | "failed" | "cancelled";
+/** Finished tasks wait in "review" until the manager approves them ("done") or asks for a revision. */
+export type TaskStatus = "queued" | "in_progress" | "review" | "done" | "failed" | "cancelled";
 
 export interface Task {
   id: string;
@@ -61,7 +65,11 @@ export interface Task {
   prompt: string;
   workflowId: string | null;
   status: TaskStatus;
+  /** 0-100, derived from step progress. */
+  progress: number;
   steps: TaskStep[];
+  /** Revision requests from the manager, oldest first. */
+  feedback: string[];
   createdAt: string;
   finishedAt: string | null;
 }
