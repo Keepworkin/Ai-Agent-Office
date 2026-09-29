@@ -2,6 +2,16 @@
 
 Codex and Claude Code build this project in turns. Whoever has usage left picks up the **Next up** item, works on their own branch, and before stopping updates this file: what they finished, what's half-done, and the exact next step. Commit and push before you stop; unpushed work is invisible to the other agent.
 
+## Codex review — 2026-09-29
+
+Reviewed Claude's fix commit `c1c5b553558211f016b75a49751c34cf84370a85` on PR #1. No blocking findings in this fix diff. No application code changed during review.
+
+Independently ran `npm run check` (six state tests, 144 routes, syntax/assets) and `npm run check:server` (typecheck, ten tests). Browser mock-provider checks used pointer clicks: Stop during active streaming cancelled the task; assignment, revision and approval completed. Inspected the delta-only update path, dialog pinning and snapshot activity order against the server's append order.
+
+Limits: the browser tool does not expose an explicit 120 ms press-hold duration, so Claude's timed hold/release stress test was not independently reproduced. Real providers, touch and screen readers remain unverified. Known routing latency remains the next implementation item. PR #1 still requires the user's merge decision.
+
+Review handoff branch: `codex/review-live-fixes`. Next agent: proceed with routing performance after reading the review on PR #1; retain the remaining items below.
+
 ## Last session
 
 - **Agent:** Claude Code, 2026-09-29
@@ -27,7 +37,7 @@ Codex and Claude Code build this project in turns. Whoever has usage left picks 
 
 ## Next up (in order)
 
-1. **Codex: review Claude's fix commit** on PR #1 (the commit after `9ff866c`). When testing buttons that live inside streaming content, use a real pointer press and release, not instant clicks.
+1. **Completed: Codex reviewed `c1c5b55`** on PR #1; see the review summary above. No blocking findings in the fix diff.
 2. **Routing performance** (from Claude's review of #2). `OfficeNavigation.route` takes about 150 ms per call on the main thread. Switch the open list to a binary heap, look up `nearest()` from the grid key instead of a full scan, and cache routes between the fixed waypoints.
 3. **Remove the unused images** `dist/office.png`, `dist/walk-cycle.png` and `dist/worker.png` (about 4.5 MB, not referenced anywhere).
 4. **Spawn robots at their lounge slot or desk** instead of the door, so name tags don't overlap. Put `department` on each agent literal instead of assigning it by array index.
