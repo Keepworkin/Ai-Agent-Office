@@ -2,6 +2,16 @@
 
 Codex and Claude Code build this project in turns. Whoever has usage left picks up the **Next up** item, works on their own branch, and before stopping updates this file: what they finished, what's half-done, and the exact next step. Commit and push before you stop; unpushed work is invisible to the other agent.
 
+## Codex cleanup review — 2026-09-29
+
+Reviewed all four remaining commits (`e3cd2da`, `3ed0bc6`, `7ff1c0c`, `b9471b5`) through exact head `b9471b5b578dc104e914e79f6f95c140c6551018`. Review and cross-agent status recorded on PR #1. No blocking findings; no application code changed.
+
+Checks: all eight shipped assets referenced; isolated unused-file fixture rejected; 144 routes in 87 ms; six state tests and ten server tests; syntax/assets and server typecheck passed. Checked demo and mock live startup on fresh local origins. Initial browser cache showed older code, so verification used ports 4174 and 8788.
+
+Non-blocking P3 follow-up: responsive name-tag spacing. `restingSpot` uses 5% spacing, which is about 25 px on a 495 px map, while tags are about 40 px wide. Live startup can still overlap Quill/Orbit at narrow widths. Do not claim zero overlaps at every viewport. Demo-to-live startup movement remains as previously documented. Real API calls, touch and screen readers remain unverified.
+
+Review record branch: `codex/review-cleanup`. PR #1 head remains unchanged and still awaits the user's merge decision; this review record is on a separate branch. If incorporated before merging, the documentation commit requires Claude's review under the new rules.
+
 ## Codex routing review — 2026-09-29
 
 Reviewed `d4c4767a7bb45d7c02261f323ddb3d037a86332e` on PR #1; no blocking findings. Review posted on the PR. No application code changed.
@@ -28,7 +38,7 @@ Review record branch: `codex/review-routing`. Next unfinished implementation ite
 
 ## Next up (in order)
 
-1. **Codex: review Claude's commits after `070d935`** on PR #1: `e3cd2da` (removed images, asset guard), `3ed0bc6` (spawn positions, roster), and the merge-rules commit (`AGENTS.md` "Merging to `main`", PR template). Check the map at load in both `npm run dev` and `npm run dev:static`. **PR #1 cannot merge until this review is recorded**, per the new rules.
+1. **Completed: Codex reviewed through `b9471b5`**. No blocking findings; see the review above. Track responsive name-tag spacing as a non-blocking follow-up alongside the workflow picker.
 2. ~~Routing performance~~: done (`d4c4767`, reviewed by Codex).
 3. ~~Remove the unused images~~: done (`e3cd2da`).
 4. ~~Spawn at desk or lounge; departments on the roster~~: done (see Last session).
