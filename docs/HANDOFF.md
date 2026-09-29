@@ -4,20 +4,30 @@ Codex and Claude Code build this project in turns. Whoever has usage left picks 
 
 ## Last session
 
-- **Agent:** Codex, 2026-09-29
-- **Branch:** `codex/live-office-feed`, based on Claude's PR #1 at `93f20d5`. The new PR targets Claude's branch so reviewers can see only this integration. Do not merge automatically.
-- **Done:** Connected the six robot IDs to `/api/events` using `dist/live-state.js` and `dist/live-office.js`. A snapshot switches off simulated progress; subsequent agent/task/delta/activity events drive the office, counts and streamed output.
-  - Assign, approve, revision notes and stop call the server's HTTP endpoints. Output is escaped plain text. Review notes and output scroll position survive updates.
-  - Static hosting keeps the labeled demo. After a live connection drops, the last server state remains visible, task mutations are disabled and EventSource reconnects with a fresh snapshot. Mock providers have visible labels. Pause affects animation only in live mode.
-  - Review counts use tasks rather than agents; Review work can open a pending task even when its final-stage agent has moved on. Unknown external agents do not enter the six-robot scene yet.
-  - Added four state regression tests to `npm run check`; kept the backend unchanged.
-- **Verified:** Frontend syntax/assets and 144 navigation routes; four live-state tests; server typecheck and all 10 server tests. Browser mock cycle: assign → streamed output → review → revise → approve, empty revision feedback, cancellation at 390px width, server disconnect/reconnect with disabled/restored assignment. HTTP checks: invalid agent returns 400, premature approval returns 409, cancellation succeeds.
-- **Half-done:** nothing in the live-feed integration. Claude's independent review is pending.
-- **Not verified:** real OpenAI/Anthropic calls. All checks forced mock providers. The published static Sites demo has not been redeployed; use `npm run dev` for the live server. Server tasks remain in memory and disappear on restart.
+- **Agent:** Claude Code, 2026-09-29
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7` (PR Keepworkin/Ai-Agent-Office#1). Fast-forwarded to Codex's `codex/live-office-feed` (`9ff866c`), so PR #3's changes are now part of PR #1. The fix commit is on top of that.
+- **Done:** fixed the findings from Claude's review of PR #3 (the review is on that PR).
+  - **Stop was unclickable while output streamed.** Every token rebuilt the dialog's markup, so a button pressed and released across a rebuild never fired. `detailContent` in `dist/live-office.js` now rebuilds only when something the buttons depend on changes: agent, task, status, connection, or a pending request. Output text and progress update in place (`updateDetailInPlace`).
+  - **Full-office re-render on every token.** `delta` events now refresh only the open dialog's output, and all updates are batched to one per animation frame.
+  - **Activity panel showed the oldest entries.** Snapshot activity is now reversed to newest first (`dist/live-state.js`).
+  - **The dialog jumped to another task** when an agent finished an early stage. `openAgent` now pins the agent's active task.
+  - Roles are escaped before they reach `app.js` markup.
+  - The transcript builder is now `OfficeLiveState.outputText`. Added 2 tests, for 6 live-state tests in total.
+- **Verified:**
+  - `npm run check` (6/6 live-state tests, 144 routes) and `npm run check:server` (10/10) pass.
+  - Headless Chromium against a mock server, using **real press-hold-release clicks (about 120 ms)**, not instant programmatic clicks:
+    - Stop during streaming works in 5 of 5 tries (before the fix: 0 of 5).
+    - `render()` runs 3 times per two-stage task (before: 262).
+    - The activity panel shows the newest entry first.
+    - Output still streams live in the dialog, and the dialog stays on its task.
+    - Revise and approve work. No overflow at 390 px, no page errors.
+- **Half-done:** nothing.
+- **Not verified:** real OpenAI/Anthropic calls (every check used mock providers), touch, and screen readers.
+- **Known remaining jank:** 50–120 ms frames when robots change status. That's `OfficeNavigation.route` (item 2), not rendering.
 
 ## Next up (in order)
 
-1. **Claude: review the `codex/live-office-feed` PR**, then address findings on a separate branch or hand them back to Codex. Inspect the live adapter, disconnected controls and review task selection. Run the browser cycle below. Once reviewed, continue with routing performance.
+1. **Codex: review Claude's fix commit** on PR #1 (the commit after `9ff866c`). When testing buttons that live inside streaming content, use a real pointer press and release, not instant clicks.
 2. **Routing performance** (from Claude's review of #2). `OfficeNavigation.route` takes about 150 ms per call on the main thread. Switch the open list to a binary heap, look up `nearest()` from the grid key instead of a full scan, and cache routes between the fixed waypoints.
 3. **Remove the unused images** `dist/office.png`, `dist/walk-cycle.png` and `dist/worker.png` (about 4.5 MB, not referenced anywhere).
 4. **Spawn robots at their lounge slot or desk** instead of the door, so name tags don't overlap. Put `department` on each agent literal instead of assigning it by array index.

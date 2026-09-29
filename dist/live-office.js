@@ -9,8 +9,18 @@ const liveAgent = () => officeStore.agents.find(agent => agent.id === selected);
 let reviewTaskId = null;
 const selectedTask = () => officeStore.tasks.find(task => task.id === reviewTaskId) ||
   (liveAgent() && OfficeLiveState.taskFor(officeStore, liveAgent()));
+// Identifies what the open dialog's markup was built for; see detailContent.
+let detailKey = null;
 const demoOpenAgent = openAgent;
-openAgent = function (id) { reviewTaskId = null; demoOpenAgent(id); };
+openAgent = function (id) {
+  // Pin the dialog to the agent's active task so it doesn't jump to another
+  // task when the agent finishes an early stage.
+  const agent = officeStore.live && officeStore.agents.find(agent => agent.id === id);
+  const task = agent && OfficeLiveState.taskFor(officeStore, agent);
+  reviewTaskId = task && ['queued', 'in_progress', 'review'].includes(task.status) ? task.id : null;
+  detailKey = null;
+  demoOpenAgent(id);
+};
 const demoReviewNext = $('#reviewnext').onclick;
 $('#reviewnext').onclick = () => {
   if (!officeStore.live) return demoReviewNext();
@@ -19,7 +29,7 @@ $('#reviewnext').onclick = () => {
   const finalStage = Math.max(...task.steps.map(step => step.stage));
   const step = task.steps.find(step => step.stage === finalStage && initial.some(agent => agent.id === step.agentId));
   if (!step) return;
-  selected = step.agentId; reviewTaskId = task.id; detailContent(); $('#detail').showModal();
+  selected = step.agentId; reviewTaskId = task.id; detailKey = null; detailContent(); $('#detail').showModal();
 };
 function connectionLabels() {
   if (!officeStore.live) return;
@@ -45,11 +55,37 @@ function connectionLabels() {
   stats[3].textContent = 'Approved on this server';
 }
 render = function () { demoRender(); connectionLabels(); };
+/** Streams text and progress into the open dialog without replacing its buttons. */
+function updateDetailInPlace(task) {
+  const output = $('#taskoutput');
+  if (output) {
+    const atBottom = output.scrollHeight - output.clientHeight - output.scrollTop < 24;
+    const text = OfficeLiveState.outputText(officeStore, task);
+    if (output.textContent !== text) {
+      output.textContent = text;
+      if (atBottom) output.scrollTop = output.scrollHeight;
+    }
+  }
+  const bar = $('#detailbody .progress > i');
+  if (bar) bar.style.width = task.progress + '%';
+  const pct = $('#detailprogress');
+  if (pct) pct.textContent = task.progress + '%';
+}
 detailContent = function () {
-  if (!officeStore.live) return demoDetailContent();
+  if (!officeStore.live) { detailKey = null; return demoDetailContent(); }
   const agent = liveAgent();
   if (!agent) { $('#detail').close(); return; }
   const task = selectedTask();
+  // Rebuilding the markup replaces the buttons, and a click whose press and
+  // release land on different elements never fires. So rebuild only when
+  // something the buttons depend on changes; stream everything else in place.
+  const key = JSON.stringify([agent.id, agent.name, agent.role, agent.mock, agent.status, task?.id, task?.title,
+    task?.status, officeStore.connected, mutationPending]);
+  if (key === detailKey && $('#detailbody [data-live-detail]')) {
+    if (task) updateDetailInPlace(task);
+    return;
+  }
+  detailKey = key;
   const previous = $('#taskoutput');
   const scroll = previous?.scrollTop || 0;
   const atBottom = !previous || previous.scrollHeight - previous.clientHeight - scroll < 24;
@@ -59,15 +95,12 @@ detailContent = function () {
   const reviewing = task?.status === 'review';
   const running = task && ['queued','in_progress'].includes(task.status);
   const disabled = !officeStore.connected || mutationPending ? 'disabled' : '';
-  $('#detailbody').innerHTML = `<button class="close" aria-label="Close">×</button><span class="detailavatar">🤖</span>
+  $('#detailbody').innerHTML = `<button class="close" aria-label="Close" data-live-detail>×</button><span class="detailavatar">🤖</span>
     <h2>${escape(agent.name)} ${agent.mock ? '<span class="tag">MOCK</span>' : ''}</h2>
     <p class="muted">${escape(agent.role)} · ${escape(agent.status)}</p>
     ${task ? `<div class="detailtask"><span class="eyebrow">${escape(task.status)}</span><p>${escape(task.title)}</p>
-      <div class="progress"><i style="width:${task.progress}%"></i></div><span class="small">${task.progress}%</span></div>
-      <h3>Task output${agent.mock ? ' · simulated' : ''}</h3><pre id="taskoutput" tabindex="0">${escape(task.steps.map(step => {
-        const author = officeStore.agents.find(a => a.id === step.agentId);
-        return `${author?.name || step.agentId}${author?.mock ? ' [MOCK]' : ''} — ${step.status}\n${step.error || step.output || 'Waiting for output…'}`;
-      }).join('\n\n'))}</pre>` : '<p>Ready for a new assignment.</p>'}
+      <div class="progress"><i style="width:${task.progress}%"></i></div><span class="small" id="detailprogress">${task.progress}%</span></div>
+      <h3>Task output${agent.mock ? ' · simulated' : ''}</h3><pre id="taskoutput" tabindex="0">${escape(OfficeLiveState.outputText(officeStore, task))}</pre>` : '<p>Ready for a new assignment.</p>'}
     ${reviewing ? `<label for="revisionfeedback">Revision notes</label><textarea id="revisionfeedback" data-task="${escape(task.id)}" maxlength="4000" placeholder="What should change?">${escape(revisionDrafts.get(task.id) || '')}</textarea>` : ''}
     <div class="detailactions">${reviewing ? `<button class="primary" id="approve" ${disabled}>✓ Approve task</button><button class="secondary" id="revise" ${disabled}>Request revision</button>` : running ? `<button class="secondary" id="canceltask" ${disabled}>Stop task</button>` : agent.status === 'idle' ? `<button class="primary" id="assignselected" ${disabled}>＋ Assign a task</button>` : ''}</div>`;
   const output = $('#taskoutput');
@@ -79,7 +112,8 @@ function projectSnapshot() {
     const agent = officeStore.agents.find(agent => agent.id === robot.id);
     if (!agent) return { ...robot, state: 'offline', task: 'Not present on the server', progress: 0 };
     const task = OfficeLiveState.taskFor(officeStore, agent);
-    return { ...robot, state: agent.status, role: agent.role + (agent.mock ? ' · MOCK' : ''),
+    // app.js interpolates role into markup unescaped.
+    return { ...robot, state: agent.status, role: escape(agent.role) + (agent.mock ? ' · MOCK' : ''),
       task: agent.activity || (task ? `${task.title} · ${task.status}` : 'Ready for a new assignment'), progress: task?.progress || 0 };
   });
   completed = officeStore.tasks.filter(task => task.status === 'done').length;
@@ -137,10 +171,27 @@ $('#taskform').onsubmit = async event => {
 };
 if (typeof EventSource !== 'undefined') {
   const feed = new EventSource('/api/events');
+  // Streaming sends a delta per token. Re-rendering the whole office for each
+  // one froze frames and swallowed clicks, so deltas only refresh the open
+  // dialog's output, and everything is batched to one update per frame.
+  let fullFrame = false, outputFrame = false;
+  const flush = () => {
+    const full = fullFrame;
+    fullFrame = outputFrame = false;
+    if (full) return projectSnapshot();
+    const task = $('#detail').open && selectedTask();
+    if (task) updateDetailInPlace(task);
+  };
+  const schedule = full => {
+    const pending = fullFrame || outputFrame;
+    if (full) fullFrame = true; else outputFrame = true;
+    if (!pending) requestAnimationFrame(flush);
+  };
   feed.onmessage = event => {
     try {
-      OfficeLiveState.receive(officeStore, JSON.parse(event.data));
-      if (officeStore.live) projectSnapshot();
+      const data = JSON.parse(event.data);
+      OfficeLiveState.receive(officeStore, data);
+      if (officeStore.live) schedule(data.type !== 'delta');
     } catch (error) { console.error('Invalid office event', error); }
   };
   feed.onerror = () => { officeStore.connected = false; if (officeStore.live) render(); };

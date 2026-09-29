@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { createStore, receive, taskFor } = require('../dist/live-state.js');
+const { createStore, receive, taskFor, outputText } = require('../dist/live-state.js');
 const agent = { id: 'atlas', currentTaskId: 'task-1' };
 const task = { id: 'task-1', createdAt: '2026-09-28', status: 'in_progress', steps: [{ agentId: 'atlas', stage: 0, status: 'working', output: '' }] };
 const snapshot = () => ({ type: 'snapshot', snapshot: { agents: [agent], tasks: [task], workflows: [], activity: [] } });
@@ -40,4 +40,21 @@ test('agent and activity events update without adding duplicate agents', () => {
   assert.equal(state.agents.length, 1);
   assert.equal(state.agents[0].status, 'review');
   assert.equal(state.activity[0].message, 'Ready');
+});
+test('snapshot activity (oldest first on the server) is stored newest first, then live entries prepend', () => {
+  const state = createStore();
+  receive(state, { type: 'snapshot', snapshot: { agents: [], tasks: [], workflows: [], activity: [{ id: 'a', message: 'oldest' }, { id: 'b', message: 'newer' }] } });
+  assert.deepEqual(state.activity.map(e => e.message), ['newer', 'oldest']);
+  receive(state, { type: 'activity', entry: { id: 'c', message: 'newest' } });
+  assert.deepEqual(state.activity.map(e => e.message), ['newest', 'newer', 'oldest']);
+});
+test('output transcript labels mock authors and falls back per step', () => {
+  const state = createStore();
+  receive(state, { type: 'snapshot', snapshot: { agents: [{ id: 'atlas', name: 'Atlas', mock: true }], tasks: [], workflows: [], activity: [] } });
+  const text = outputText(state, { steps: [
+    { agentId: 'atlas', status: 'done', output: 'Findings' },
+    { agentId: 'byte', status: 'failed', output: '', error: 'boom' },
+    { agentId: 'orbit', status: 'pending', output: '' },
+  ] });
+  assert.equal(text, 'Atlas [MOCK] — done\nFindings\n\nbyte — failed\nboom\n\norbit — pending\nWaiting for output…');
 });

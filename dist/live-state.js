@@ -10,6 +10,8 @@
   function receive(store, event) {
     if (event.type === 'snapshot') {
       Object.assign(store, structuredClone(event.snapshot), { live: true, connected: true });
+      // The server lists activity oldest first; the store keeps newest first.
+      store.activity = store.activity.reverse().slice(0, 100);
     } else if (store.live) {
       if (event.type === 'agent') upsert(store.agents, event.agent);
       if (event.type === 'task') upsert(store.tasks, event.task);
@@ -28,7 +30,14 @@
       task.status === 'review' && task.steps.some(step => step.agentId === agent.id &&
         step.stage === Math.max(...task.steps.map(step => step.stage)))) || own[0];
   }
-  const api = { createStore, receive, taskFor };
+  /** Plain-text transcript of every step, shown in the agent dialog. */
+  function outputText(store, task) {
+    return task.steps.map(step => {
+      const author = store.agents.find(agent => agent.id === step.agentId);
+      return `${author?.name || step.agentId}${author?.mock ? ' [MOCK]' : ''} — ${step.status}\n${step.error || step.output || 'Waiting for output…'}`;
+    }).join('\n\n');
+  }
+  const api = { createStore, receive, taskFor, outputText };
   if (typeof module !== 'undefined') module.exports = api;
   else root.OfficeLiveState = api;
 })(globalThis);
