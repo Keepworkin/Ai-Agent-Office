@@ -12,7 +12,7 @@ The two tools build this project in turns; whichever one has usage left works wh
 - **Frontend — `dist/`** (static, no build step). `dist/` is the authored source, not disposable build output.
   - `dist/index.html`: page structure. `dist/style.css`: responsive theme. `dist/app.js`: state and interactions. `dist/navigation.js`: walkable floor + A* routing.
   - Art in use: `dist/office-iso.png` (office map) and `dist/robot-cycle.png` (robot sprites).
-  - Activity is still simulated by a timer in `dist/app.js`; wiring it to the server is the next milestone (see `docs/HANDOFF.md`).
+  - `dist/live-state.js` and `dist/live-office.js` connect server events and HTTP task controls. Static hosting falls back to the labeled demo; receiving a server snapshot disables simulated progress.
 - **Backend — `server/`** (Node + TypeScript). Runs the six teammates on real models: Atlas, Nova, Sage on ChatGPT (OpenAI Responses API); Byte, Quill, Orbit on Claude (Anthropic SDK). Ids match the robots in `dist/app.js`.
   - `server/src/office/office.ts`: orchestrator (stages, hand-offs, review/approve/revise, cancel). `server/src/providers/`: Anthropic, OpenAI and mock adapters. `server/src/types.ts`: every event and data shape.
   - Streams changes over server-sent events at `GET /api/events`; full API in `server/README.md`.

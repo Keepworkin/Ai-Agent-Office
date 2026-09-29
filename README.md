@@ -1,6 +1,6 @@
 # Agent Office
 
-An animated isometric office dashboard for a demo AI team. Inspect agent characters, assign simulated tasks, review finished work, and switch to a manager workload view.
+An animated isometric office dashboard for an AI team. Inspect robot teammates, assign server tasks, review streamed output, and switch to a manager workload view.
 
 ## Run locally
 
@@ -31,12 +31,12 @@ Run `npm run check` for the dashboard's syntax, asset and navigation checks, and
 - `.github/` — automatic checks and a pull request handoff template.
 - `.openai/hosting.json` — Sites identity and static publishing configuration; no secrets.
 
-## Demo boundaries
+## Live feed and static demo
 
-The dashboard in `dist/` still runs its simulated demo: six specialists, simulated progress and illustrative completion counts, held in browser memory. The server in `server/` runs the same six teammates on real models. Connecting the two is the next milestone (see `docs/HANDOFF.md`). The shared repository supports development collaboration; it does not automatically orchestrate Codex and Claude Code.
+With `npm run dev`, the dashboard receives server-sent events and sends task assignments, approvals, revision notes and cancellations to the server. Robots use server status and task progress. Output streams into the task dialog. Providers without keys are tagged **MOCK**; configured providers can make real, billable API calls. Provider secrets never enter browser JavaScript.
 
-## Next integration milestone
+With `npm run dev:static`, the dashboard stays in **DEMO MODE** with simulated tasks. Once connected to a live server, a dropped connection retains the last known state and disables task changes until a fresh snapshot arrives. Pause controls only animation in live mode. Tasks are currently held in server memory and disappear on restart.
 
-Agree on the agent runner and authentication before adding live activity. Put provider calls behind a server; normalize agent/task events; replace the demo timer; retain explicit connection and error states. Never put provider secrets into browser JavaScript.
+The shared repository supports relay development; it does not automatically orchestrate Codex and Claude Code. See `docs/HANDOFF.md` for the next step and review instructions.
 
 Office art was generated for this project. The map and robot sprite sheet were generated for this project; roster icons use platform emoji. Friendly robot teammates use directional walking frames with their shoes anchored to the floor. Routes avoid mapped furniture and walls. Working agents walk to desks; idle and review-state agents lounge and wander. Two vacant suites are reserved for future platforms. Department labels do not imply live provider connections. Google Fonts are optional external font requests with local fallbacks.

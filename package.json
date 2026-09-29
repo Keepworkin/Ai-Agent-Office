@@ -10,7 +10,7 @@
     "dev:static": "python3 -m http.server 4173 --bind 127.0.0.1 --directory dist",
     "start": "npm run start -w server",
     "build": "npm run build -w server",
-    "check": "node --check dist/app.js && node --check dist/navigation.js && node scripts/check-assets.mjs && node scripts/check-navigation.cjs",
+    "check": "node --check dist/app.js && node --check dist/navigation.js && node scripts/check-assets.mjs && node scripts/check-navigation.cjs && node --check dist/live-office.js && node --check dist/live-state.js && node --test scripts/check-live-state.cjs",
     "check:server": "npm run typecheck -w server && npm run test -w server"
   },
   "engines": {

@@ -1,0 +1,147 @@
+/* Live transport is optional: a static host retains the original demo. */
+const officeStore = OfficeLiveState.createStore();
+window.officeStore = officeStore;
+let mutationPending = false;
+const demoDetailContent = detailContent;
+const demoRender = render;
+const revisionDrafts = new Map();
+const liveAgent = () => officeStore.agents.find(agent => agent.id === selected);
+let reviewTaskId = null;
+const selectedTask = () => officeStore.tasks.find(task => task.id === reviewTaskId) ||
+  (liveAgent() && OfficeLiveState.taskFor(officeStore, liveAgent()));
+const demoOpenAgent = openAgent;
+openAgent = function (id) { reviewTaskId = null; demoOpenAgent(id); };
+const demoReviewNext = $('#reviewnext').onclick;
+$('#reviewnext').onclick = () => {
+  if (!officeStore.live) return demoReviewNext();
+  const task = officeStore.tasks.find(task => task.status === 'review');
+  if (!task) return;
+  const finalStage = Math.max(...task.steps.map(step => step.stage));
+  const step = task.steps.find(step => step.stage === finalStage && initial.some(agent => agent.id === step.agentId));
+  if (!step) return;
+  selected = step.agentId; reviewTaskId = task.id; detailContent(); $('#detail').showModal();
+};
+function connectionLabels() {
+  if (!officeStore.live) return;
+  const mock = officeStore.agents.some(agent => agent.mock);
+  $('.demo').textContent = officeStore.connected ? (mock ? 'LIVE FEED · MOCK PROVIDERS' : 'LIVE FEED') : 'RECONNECTING';
+  $('.sidebottom p').textContent = officeStore.connected
+    ? 'Tasks come from your server. Agents tagged mock generate simulated output.'
+    : 'Connection lost. Showing the last known state; task controls resume after reconnecting.';
+  $('.legendright').textContent = officeStore.connected ? 'Server activity' : 'Connection lost';
+  $('.rosterhead > span').textContent = 'ChatGPT + Claude · Server teammates';
+  $('#taskform .muted').textContent = 'Give an available teammate something to focus on.';
+  $('#taskform p.small').textContent = 'Uses the selected agent’s server provider. Mock tags mean simulated output; configured providers make real API calls.';
+  $('#reset').hidden = true;
+  $('#pause').textContent = paused ? '▶ Resume animation' : 'Ⅱ Pause animation';
+  $('#newtask').disabled = !officeStore.connected || mutationPending;
+  $('#taskform button[type="submit"]').disabled = !officeStore.connected || mutationPending;
+  const reviews = officeStore.tasks.filter(task => task.status === 'review').length;
+  $('#reviewcount').textContent = reviews ? `${reviews} task${reviews === 1 ? '' : 's'} to review` : 'You’re all caught up';
+  $('#reviewnext').disabled = !reviews;
+  $('#stats').querySelectorAll('.stat strong')[2].textContent = String(reviews).padStart(2, '0');
+  const stats = $('#stats').querySelectorAll('.stat small');
+  stats[0].textContent = 'Connected robot team';
+  stats[3].textContent = 'Approved on this server';
+}
+render = function () { demoRender(); connectionLabels(); };
+detailContent = function () {
+  if (!officeStore.live) return demoDetailContent();
+  const agent = liveAgent();
+  if (!agent) { $('#detail').close(); return; }
+  const task = selectedTask();
+  const previous = $('#taskoutput');
+  const scroll = previous?.scrollTop || 0;
+  const atBottom = !previous || previous.scrollHeight - previous.clientHeight - scroll < 24;
+  const draft = $('#revisionfeedback');
+  if (draft) revisionDrafts.set(draft.dataset.task, draft.value);
+  const cursor = draft && document.activeElement === draft ? [draft.selectionStart, draft.selectionEnd] : null;
+  const reviewing = task?.status === 'review';
+  const running = task && ['queued','in_progress'].includes(task.status);
+  const disabled = !officeStore.connected || mutationPending ? 'disabled' : '';
+  $('#detailbody').innerHTML = `<button class="close" aria-label="Close">×</button><span class="detailavatar">🤖</span>
+    <h2>${escape(agent.name)} ${agent.mock ? '<span class="tag">MOCK</span>' : ''}</h2>
+    <p class="muted">${escape(agent.role)} · ${escape(agent.status)}</p>
+    ${task ? `<div class="detailtask"><span class="eyebrow">${escape(task.status)}</span><p>${escape(task.title)}</p>
+      <div class="progress"><i style="width:${task.progress}%"></i></div><span class="small">${task.progress}%</span></div>
+      <h3>Task output${agent.mock ? ' · simulated' : ''}</h3><pre id="taskoutput" tabindex="0">${escape(task.steps.map(step => {
+        const author = officeStore.agents.find(a => a.id === step.agentId);
+        return `${author?.name || step.agentId}${author?.mock ? ' [MOCK]' : ''} — ${step.status}\n${step.error || step.output || 'Waiting for output…'}`;
+      }).join('\n\n'))}</pre>` : '<p>Ready for a new assignment.</p>'}
+    ${reviewing ? `<label for="revisionfeedback">Revision notes</label><textarea id="revisionfeedback" data-task="${escape(task.id)}" maxlength="4000" placeholder="What should change?">${escape(revisionDrafts.get(task.id) || '')}</textarea>` : ''}
+    <div class="detailactions">${reviewing ? `<button class="primary" id="approve" ${disabled}>✓ Approve task</button><button class="secondary" id="revise" ${disabled}>Request revision</button>` : running ? `<button class="secondary" id="canceltask" ${disabled}>Stop task</button>` : agent.status === 'idle' ? `<button class="primary" id="assignselected" ${disabled}>＋ Assign a task</button>` : ''}</div>`;
+  const output = $('#taskoutput');
+  if (output) output.scrollTop = atBottom ? output.scrollHeight : scroll;
+  if (cursor && $('#revisionfeedback')) { $('#revisionfeedback').focus(); $('#revisionfeedback').setSelectionRange(...cursor); }
+};
+function projectSnapshot() {
+  agents = initial.map(robot => {
+    const agent = officeStore.agents.find(agent => agent.id === robot.id);
+    if (!agent) return { ...robot, state: 'offline', task: 'Not present on the server', progress: 0 };
+    const task = OfficeLiveState.taskFor(officeStore, agent);
+    return { ...robot, state: agent.status, role: agent.role + (agent.mock ? ' · MOCK' : ''),
+      task: agent.activity || (task ? `${task.title} · ${task.status}` : 'Ready for a new assignment'), progress: task?.progress || 0 };
+  });
+  completed = officeStore.tasks.filter(task => task.status === 'done').length;
+  events = officeStore.activity.slice(0, 5).map(entry => ({ name: 'Office', text: entry.message,
+    time: new Date(entry.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }));
+  render();
+}
+async function postTask(path, body = {}) {
+  if (!officeStore.connected) throw new Error('Wait for the server connection to return.');
+  if (mutationPending) throw new Error('A task request is already in progress.');
+  mutationPending = true;
+  render();
+  try {
+    const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`);
+    // SSE remains the sole source of state, avoiding HTTP/SSE ordering races.
+    return result;
+  } finally { mutationPending = false; render(); }
+}
+document.addEventListener('click', async event => {
+  if (!officeStore.live) return;
+  const id = event.target.closest('button')?.id;
+  if (!['approve','revise','canceltask','reset','pause'].includes(id)) return;
+  event.stopImmediatePropagation();
+  if (id === 'reset') return;
+  if (id === 'pause') { paused = !paused; document.body.classList.toggle('paused', paused); connectionLabels(); return; }
+  const task = selectedTask();
+  if (!task) return;
+  const feedback = $('#revisionfeedback')?.value.trim();
+  if (id === 'revise' && !feedback) { notify('Add revision notes first.'); $('#revisionfeedback').focus(); return; }
+  try {
+    await postTask(`/api/tasks/${encodeURIComponent(task.id)}/${{approve:'approve',revise:'revise',canceltask:'cancel'}[id]}`, id === 'revise' ? { feedback } : {});
+    revisionDrafts.delete(task.id);
+    notify(id === 'approve' ? 'Task approved.' : id === 'revise' ? 'Revision requested.' : 'Task stopped.');
+  } catch (error) { notify(error.message); }
+}, true);
+const demoSubmit = $('#taskform').onsubmit;
+$('#taskform').onsubmit = async event => {
+  if (!officeStore.live) return demoSubmit(event);
+  event.preventDefault();
+  const agentId = $('#agentselect').value;
+  const prompt = $('#tasktext').value.trim();
+  if (!prompt) return;
+  if (officeStore.agents.find(agent => agent.id === agentId)?.status !== 'idle') {
+    notify('That teammate is no longer available. Choose another teammate.');
+    return;
+  }
+  try {
+    await postTask('/api/tasks', { prompt, stages: [[agentId]] });
+    $('#taskdialog').close();
+    openAgent(agentId);
+    notify('Task assigned to the server.');
+  } catch (error) { notify(error.message); }
+};
+if (typeof EventSource !== 'undefined') {
+  const feed = new EventSource('/api/events');
+  feed.onmessage = event => {
+    try {
+      OfficeLiveState.receive(officeStore, JSON.parse(event.data));
+      if (officeStore.live) projectSnapshot();
+    } catch (error) { console.error('Invalid office event', error); }
+  };
+  feed.onerror = () => { officeStore.connected = false; if (officeStore.live) render(); };
+}
