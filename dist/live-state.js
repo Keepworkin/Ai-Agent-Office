@@ -30,14 +30,21 @@
       task.status === 'review' && task.steps.some(step => step.agentId === agent.id &&
         step.stage === Math.max(...task.steps.map(step => step.stage)))) || own[0];
   }
-  /** Plain-text transcript of every step, shown in the agent dialog. */
-  function outputText(store, task) {
-    return task.steps.map(step => {
-      const author = store.agents.find(agent => agent.id === step.agentId);
-      return `${author?.name || step.agentId}${author?.mock ? ' [MOCK]' : ''} — ${step.status}\n${step.error || step.output || 'Waiting for output…'}`;
-    }).join('\n\n');
+  const providerName = provider => ({ anthropic: 'Claude', openai: 'ChatGPT' })[provider] || 'External';
+  /** A task's steps grouped by stage; agents within a stage worked side by side. */
+  function stagesOf(task) {
+    const stages = [];
+    task.steps.forEach((step, index) => { (stages[step.stage] ||= []).push({ step, index }); });
+    return stages.filter(Boolean);
   }
-  const api = { createStore, receive, taskFor, outputText };
+  /** "Stage 1: Quill (Claude) + Atlas (ChatGPT) → Stage 2: Orbit (Claude)" for a workflow's stages of agent ids. */
+  function describeStages(store, stages) {
+    return stages.map((ids, i) => `Stage ${i + 1}: ` + ids.map(id => {
+      const agent = store.agents.find(agent => agent.id === id);
+      return agent ? `${agent.name} (${providerName(agent.provider)})` : id;
+    }).join(' + ')).join(' → ');
+  }
+  const api = { createStore, receive, taskFor, providerName, stagesOf, describeStages };
   if (typeof module !== 'undefined') module.exports = api;
   else root.OfficeLiveState = api;
 })(globalThis);

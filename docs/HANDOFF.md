@@ -18,11 +18,30 @@ Codex and Claude Code build this project in turns. Whoever has usage left picks 
 
 ## Last session
 
-- **Agent:** Claude Code, 2026-09-29. Merged PR #1 after the owner approved. Restarted `claude/ai-agent-office-repo-9nv3o7` from `main` and rewrote this file. No application code changed.
+- **Agent:** Claude Code, 2026-09-29. Branch `claude/ai-agent-office-repo-9nv3o7`, PR Keepworkin/Ai-Agent-Office#4. The PR holds the reviewed handoff commit `7fcbc59` plus the workflow picker on top, because this session can only push to its own branch.
+- **Done: workflow picker** (Next up item 1).
+  - **Assign dialog** (live mode only): new "How should the team work?" menu with "One teammate" or any of the server's workflows (`officeStore.workflows`).
+    - Choosing a workflow hides the teammate menu and shows the description plus who works in each stage, e.g. "Stage 1: Quill (Claude) + Atlas (ChatGPT) → Stage 2: Orbit (Claude)".
+    - Workflows stay available when every desk is busy, since the server queues them; "One teammate (all busy)" is then disabled.
+    - Live prompts may be up to 2000 characters.
+  - **Task dialog:** output is grouped by stage, and agents in the same stage sit **side by side** in a wider (900 px) dialog, stacking under 700 px. Headers show agent · Claude/ChatGPT · MOCK · status. Text still updates in place per step (`data-step` / `data-step-head`), so buttons are never rebuilt mid-stream.
+  - Pure helpers in `dist/live-state.js`: `stagesOf`, `describeStages`, `providerName`, all tested. The unused `outputText` was removed.
+  - The static demo is unchanged; the picker is hidden there.
+- **Verified:**
+  - `npm run check` (7 live-state tests, 144 routes, assets) and `npm run check:server`.
+  - Headless Chromium with a mock server:
+    - The picker lists all 4 workflows.
+    - Head to head: Quill and Atlas stream at the same time on the same row, with Orbit pending in stage 2.
+    - A 120 ms press-and-release on Stop cancels the workflow mid-stream.
+    - "Claude writes → ChatGPT checks" runs through to review.
+    - All desks busy: the dialog still opens with a workflow preselected.
+    - No overflow at 390 px, no page errors.
+    - Demo mode: picker hidden, demo assign still works.
+- **Not verified:** real providers, touch, screen readers.
 
 ## Next up (in order)
 
-1. **Workflow picker in the Assign dialog.** Offer single-agent tasks and the server's `workflows` (`GET /api/office` → `workflows`), such as "Head to head" (Claude and ChatGPT side by side, then a comparison). Show every agent a workflow involves, and open the task with a side-by-side view of the outputs.
+1. **Codex: review PR #4** at its head (the handoff commit `7fcbc59` was already reviewed; review the workflow-picker commit after it). Try Head to head and a busy-desks assignment in `npm run dev`, and confirm `npm run dev:static` still shows the plain demo dialog.
 2. **Responsive name-tag spacing** (P3 from Codex's review). `restingSpot` spaces lounge slots by a percentage of the map, which is about 25 px on a 495 px map while tags are about 40 px wide, so Quill and Orbit can overlap on narrow screens. Space slots by label width, or nudge overlapping tags apart after layout.
 3. **No demo flash in live mode.** The page draws the demo roster, then moves the robots once the first server snapshot arrives about 100 ms later. Hide the scene until the snapshot arrives or a short timeout passes, then fall back to the demo.
 4. **Codex & Claude Code desks.** `POST /api/external/report {agentId, kind:"codex"|"claude-code", status, message}` already adds external agents to the server. Give them a spot in a vacant suite on the map, and add a small script plus hook config so each tool reports itself automatically.

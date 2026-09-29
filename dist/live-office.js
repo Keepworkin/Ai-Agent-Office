@@ -55,16 +55,33 @@ function connectionLabels() {
   stats[3].textContent = 'Approved on this server';
 }
 render = function () { demoRender(); connectionLabels(); };
+function stepLabel(step) {
+  const agent = officeStore.agents.find(a => a.id === step.agentId);
+  return `${agent?.name || step.agentId} · ${OfficeLiveState.providerName(agent?.provider)}${agent?.mock ? ' · MOCK' : ''} · ${step.status}`;
+}
+const stepText = step => step.error || step.output || 'Waiting for output…';
+/** Output grouped by stage; agents in the same stage sit side by side. */
+function outputMarkup(task) {
+  const stages = OfficeLiveState.stagesOf(task);
+  return stages.map((group, i) => `<div class="outputstage" style="--cols:${group.length}">${stages.length > 1 || group.length > 1
+      ? `<p class="stagelabel">Stage ${i + 1}${group.length > 1 ? ' · side by side' : ''}</p>` : ''}${group.map(({ step, index }) => {
+      const provider = officeStore.agents.find(a => a.id === step.agentId)?.provider;
+      return `<section class="outputstep ${provider === 'anthropic' ? 'claude' : provider === 'openai' ? 'chatgpt' : ''}"><h4 data-step-head="${index}">${escape(stepLabel(step))}</h4><pre data-step="${index}">${escape(stepText(step))}</pre></section>`;
+    }).join('')}</div>`).join('');
+}
 /** Streams text and progress into the open dialog without replacing its buttons. */
 function updateDetailInPlace(task) {
   const output = $('#taskoutput');
   if (output) {
     const atBottom = output.scrollHeight - output.clientHeight - output.scrollTop < 24;
-    const text = OfficeLiveState.outputText(officeStore, task);
-    if (output.textContent !== text) {
-      output.textContent = text;
-      if (atBottom) output.scrollTop = output.scrollHeight;
-    }
+    let grew = false;
+    task.steps.forEach((step, index) => {
+      const pre = output.querySelector(`[data-step="${index}"]`), head = output.querySelector(`[data-step-head="${index}"]`);
+      const text = stepText(step), label = stepLabel(step);
+      if (pre && pre.textContent !== text) { pre.textContent = text; grew = true; }
+      if (head && head.textContent !== label) head.textContent = label;
+    });
+    if (grew && atBottom) output.scrollTop = output.scrollHeight;
   }
   const bar = $('#detailbody .progress > i');
   if (bar) bar.style.width = task.progress + '%';
@@ -72,7 +89,7 @@ function updateDetailInPlace(task) {
   if (pct) pct.textContent = task.progress + '%';
 }
 detailContent = function () {
-  if (!officeStore.live) { detailKey = null; return demoDetailContent(); }
+  if (!officeStore.live) { detailKey = null; $('#detail').classList.remove('wide'); return demoDetailContent(); }
   const agent = liveAgent();
   if (!agent) { $('#detail').close(); return; }
   const task = selectedTask();
@@ -100,9 +117,11 @@ detailContent = function () {
     <p class="muted">${escape(agent.role)} · ${escape(agent.status)}</p>
     ${task ? `<div class="detailtask"><span class="eyebrow">${escape(task.status)}</span><p>${escape(task.title)}</p>
       <div class="progress"><i style="width:${task.progress}%"></i></div><span class="small" id="detailprogress">${task.progress}%</span></div>
-      <h3>Task output${agent.mock ? ' · simulated' : ''}</h3><pre id="taskoutput" tabindex="0">${escape(OfficeLiveState.outputText(officeStore, task))}</pre>` : '<p>Ready for a new assignment.</p>'}
+      <h3>Task output${task.steps.some(step => officeStore.agents.find(a => a.id === step.agentId)?.mock) ? ' · simulated' : ''}</h3><div id="taskoutput" tabindex="0">${outputMarkup(task)}</div>` : '<p>Ready for a new assignment.</p>'}
     ${reviewing ? `<label for="revisionfeedback">Revision notes</label><textarea id="revisionfeedback" data-task="${escape(task.id)}" maxlength="4000" placeholder="What should change?">${escape(revisionDrafts.get(task.id) || '')}</textarea>` : ''}
     <div class="detailactions">${reviewing ? `<button class="primary" id="approve" ${disabled}>✓ Approve task</button><button class="secondary" id="revise" ${disabled}>Request revision</button>` : running ? `<button class="secondary" id="canceltask" ${disabled}>Stop task</button>` : agent.status === 'idle' ? `<button class="primary" id="assignselected" ${disabled}>＋ Assign a task</button>` : ''}</div>`;
+  // Multi-agent tasks get a wider dialog so parallel outputs can sit side by side.
+  $('#detail').classList.toggle('wide', !!task && task.steps.length > 1);
   const output = $('#taskoutput');
   if (output) output.scrollTop = atBottom ? output.scrollHeight : scroll;
   if (cursor && $('#revisionfeedback')) { $('#revisionfeedback').focus(); $('#revisionfeedback').setSelectionRange(...cursor); }
@@ -151,6 +170,42 @@ document.addEventListener('click', async event => {
     notify(id === 'approve' ? 'Task approved.' : id === 'revise' ? 'Revision requested.' : 'Task stopped.');
   } catch (error) { notify(error.message); }
 }, true);
+// Workflow picker: in live mode a task can go to one teammate or to one of the
+// server's workflows (e.g. Claude and ChatGPT side by side, then a comparison).
+const demoOpenTask = openTask;
+function describeWorkflowChoice() {
+  const workflow = officeStore.workflows.find(w => w.id === $('#workflowselect').value);
+  $('#agentfield').hidden = !!workflow;
+  $('#agentselect').required = !workflow;
+  $('#workflowinfo').textContent = workflow
+    ? `${workflow.description} ${OfficeLiveState.describeStages(officeStore, workflow.stages)}.`
+    : 'One available teammate works on it alone.';
+  $('#taskform button[type="submit"]').textContent = workflow ? 'Start the workflow ↗' : 'Send to their desk ↗';
+}
+openTask = function (id) {
+  if (!officeStore.live) return demoOpenTask(id);
+  const available = agents.filter(a => a.state === 'idle');
+  if (!available.length && !officeStore.workflows.length) { notify('All desks are busy. Approve or stop a task first.'); return; }
+  $('#agentselect').innerHTML = available.map(a => `<option value="${a.id}">${a.name} · ${a.department} / ${a.role}</option>`).join('');
+  if (id && available.some(a => a.id === id)) $('#agentselect').value = id;
+  // Workflows queue behind busy agents on the server, so they stay available when every desk is taken.
+  $('#workflowselect').innerHTML = `<option value="" ${available.length ? '' : 'disabled'}>One teammate${available.length ? '' : ' (all busy)'}</option>` +
+    officeStore.workflows.map(w => `<option value="${escape(w.id)}">${escape(w.name)}</option>`).join('');
+  $('#workflowselect').value = available.length || !officeStore.workflows.length ? '' : officeStore.workflows[0].id;
+  $('#workflowfield').hidden = !officeStore.workflows.length;
+  $('#tasktext').maxLength = 2000;
+  $('#tasktext').value = '';
+  describeWorkflowChoice();
+  $('#taskdialog').showModal();
+};
+$('#workflowselect').onchange = describeWorkflowChoice;
+/** Opens the task dialog on a task the server just created, before its first SSE event may have arrived. */
+function openTaskDialog(task) {
+  // Insert only if absent: every later SSE task event replaces this copy, so it can't go stale.
+  if (!officeStore.tasks.some(t => t.id === task.id)) officeStore.tasks.push(task);
+  selected = task.steps[0].agentId; reviewTaskId = task.id; detailKey = null;
+  detailContent(); $('#detail').showModal();
+}
 const demoSubmit = $('#taskform').onsubmit;
 $('#taskform').onsubmit = async event => {
   if (!officeStore.live) return demoSubmit(event);
@@ -158,6 +213,16 @@ $('#taskform').onsubmit = async event => {
   const agentId = $('#agentselect').value;
   const prompt = $('#tasktext').value.trim();
   if (!prompt) return;
+  const workflowId = $('#workflowfield').hidden ? '' : $('#workflowselect').value;
+  if (workflowId) {
+    try {
+      const task = await postTask('/api/tasks', { prompt, workflowId });
+      $('#taskdialog').close();
+      openTaskDialog(task);
+      notify('Workflow started on the server.');
+    } catch (error) { notify(error.message); }
+    return;
+  }
   if (officeStore.agents.find(agent => agent.id === agentId)?.status !== 'idle') {
     notify('That teammate is no longer available. Choose another teammate.');
     return;
