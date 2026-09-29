@@ -2,43 +2,35 @@
 
 Codex and Claude Code build this project in turns. Whoever has usage left picks up the **Next up** item, works on their own branch, and before stopping updates this file: what they finished, what's half-done, and the exact next step. Commit and push before you stop; unpushed work is invisible to the other agent.
 
-## Codex review — 2026-09-29
-
-Reviewed Claude's fix commit `c1c5b553558211f016b75a49751c34cf84370a85` on PR #1. No blocking findings in this fix diff. No application code changed during review.
-
-Independently ran `npm run check` (six state tests, 144 routes, syntax/assets) and `npm run check:server` (typecheck, ten tests). Browser mock-provider checks used pointer clicks: Stop during active streaming cancelled the task; assignment, revision and approval completed. Inspected the delta-only update path, dialog pinning and snapshot activity order against the server's append order.
-
-Limits: the browser tool does not expose an explicit 120 ms press-hold duration, so Claude's timed hold/release stress test was not independently reproduced. Real providers, touch and screen readers remain unverified. Known routing latency remains the next implementation item. PR #1 still requires the user's merge decision.
-
-Review handoff branch: `codex/review-live-fixes`. Next agent: proceed with routing performance after reading the review on PR #1; retain the remaining items below.
-
 ## Last session
 
 - **Agent:** Claude Code, 2026-09-29
-- **Branch:** `claude/ai-agent-office-repo-9nv3o7` (PR Keepworkin/Ai-Agent-Office#1). Fast-forwarded to Codex's `codex/live-office-feed` (`9ff866c`), so PR #3's changes are now part of PR #1. The fix commit is on top of that.
-- **Done:** fixed the findings from Claude's review of PR #3 (the review is on that PR).
-  - **Stop was unclickable while output streamed.** Every token rebuilt the dialog's markup, so a button pressed and released across a rebuild never fired. `detailContent` in `dist/live-office.js` now rebuilds only when something the buttons depend on changes: agent, task, status, connection, or a pending request. Output text and progress update in place (`updateDetailInPlace`).
-  - **Full-office re-render on every token.** `delta` events now refresh only the open dialog's output, and all updates are batched to one per animation frame.
-  - **Activity panel showed the oldest entries.** Snapshot activity is now reversed to newest first (`dist/live-state.js`).
-  - **The dialog jumped to another task** when an agent finished an early stage. `openAgent` now pins the agent's active task.
-  - Roles are escaped before they reach `app.js` markup.
-  - The transcript builder is now `OfficeLiveState.outputText`. Added 2 tests, for 6 live-state tests in total.
-- **Verified:**
-  - `npm run check` (6/6 live-state tests, 144 routes) and `npm run check:server` (10/10) pass.
-  - Headless Chromium against a mock server, using **real press-hold-release clicks (about 120 ms)**, not instant programmatic clicks:
-    - Stop during streaming works in 5 of 5 tries (before the fix: 0 of 5).
-    - `render()` runs 3 times per two-stage task (before: 262).
-    - The activity panel shows the newest entry first.
-    - Output still streams live in the dialog, and the dialog stays on its task.
-    - Revise and approve work. No overflow at 390 px, no page errors.
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7` (PR Keepworkin/Ai-Agent-Office#1). Fast-forwarded to Codex's `codex/review-live-fixes` (`e934d72`, Codex's review record for `c1c5b55`: no blocking findings). The routing commit is on top of that.
+- **Done: routing performance** (item 2), in `dist/navigation.js`:
+  - Profiling showed about 60% of the time in point-in-polygon checks (`clear()` re-sampling every neighbor edge on every route), about 25% in garbage collection, and the rest in scans of the open list.
+  - Fixes:
+    - Each node's walkable neighbors are cached after the first computation.
+    - The open list is a binary heap.
+    - Node paths are cached, up to 500.
+    - `walkable()` skips polygons whose bounding box excludes the point and no longer allocates per call.
+  - The public API and behavior are unchanged. Against the old code: 0 mismatches over 200,000 random `walkable` points and 3,000 random `clear` segments. All waypoint routes end at the same place, none got longer, and none were lost.
+  - `scripts/check-navigation.cjs` now fails if the 144 routes take longer than 3 s. They take about 0.3 s now; the old code took 13.2 s, which trips the guard.
+- **Numbers (Node):**
+
+  | | Before | After |
+  |---|---|---|
+  | Cold first route | 276 ms | 21 ms |
+  | Average waypoint route | 88 ms | 1.6 ms |
+  | Worst waypoint route | 455 ms | 10 ms |
+
+- **Browser:** 0 long tasks over 20 s in both the static demo and the live office, with all six robots re-routing at once. Before: 51–260 ms stalls.
 - **Half-done:** nothing.
-- **Not verified:** real OpenAI/Anthropic calls (every check used mock providers), touch, and screen readers.
-- **Known remaining jank:** 50–120 ms frames when robots change status. That's `OfficeNavigation.route` (item 2), not rendering.
+- **Not verified:** real OpenAI/Anthropic calls, touch, and screen readers.
 
 ## Next up (in order)
 
-1. **Completed: Codex reviewed `c1c5b55`** on PR #1; see the review summary above. No blocking findings in the fix diff.
-2. **Routing performance** (from Claude's review of #2). `OfficeNavigation.route` takes about 150 ms per call on the main thread. Switch the open list to a binary heap, look up `nearest()` from the grid key instead of a full scan, and cache routes between the fixed waypoints.
+1. **Codex: review Claude's routing commit** on PR #1 (the commit after `e934d72`). Watch the robots walk in both `npm run dev` and `npm run dev:static`.
+2. ~~Routing performance~~: done (see Last session).
 3. **Remove the unused images** `dist/office.png`, `dist/walk-cycle.png` and `dist/worker.png` (about 4.5 MB, not referenced anywhere).
 4. **Spawn robots at their lounge slot or desk** instead of the door, so name tags don't overlap. Put `department` on each agent literal instead of assigning it by array index.
 5. **Workflow picker in the Assign dialog.** Offer single-agent tasks and the server's `workflows`, such as "Head to head" (Claude vs ChatGPT side by side).
@@ -49,7 +41,7 @@ Review handoff branch: `codex/review-live-fixes`. Next agent: proceed with routi
 
 ```sh
 npm install
-npm run check          # dashboard: syntax, assets, 144 navigation routes
+npm run check          # dashboard: syntax, assets, 144 navigation routes (+ time budget), live-state tests
 npm run check:server   # server: typecheck + tests (fake provider, no API calls)
 npm run dev            # http://localhost:8787 — works with no keys (mock mode)
 ```
