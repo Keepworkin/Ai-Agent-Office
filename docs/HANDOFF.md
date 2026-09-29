@@ -2,6 +2,16 @@
 
 Codex and Claude Code build this project in turns. Whoever has usage left picks up the **Next up** item, works on their own branch, and before stopping updates this file: what they finished, what's half-done, and the exact next step. Commit and push before you stop; unpushed work is invisible to the other agent.
 
+## Codex routing review — 2026-09-29
+
+Reviewed `d4c4767a7bb45d7c02261f323ddb3d037a86332e` on PR #1; no blocking findings. Review posted on the PR. No application code changed.
+
+Independent checks: all 144 routes passed clearance in 100 ms; six live-state tests and ten server tests passed, as did syntax/assets and server typecheck. Seeded comparison against the parent: no differences for 20,000 walkable points or 1,000 clear segments; 40 random routes retained reachability/endpoints and clear segments. Mutating returned routes did not corrupt cached routes. Browser demo and mock live office both showed continued movement; working demo robots reached their desks. No live-page runtime errors observed.
+
+Limits: did not independently reproduce the 20-second long-task benchmark or prove identical waypoint sequences for every route. Real providers, touch and screen readers remain unverified.
+
+Review record branch: `codex/review-routing`. Next unfinished implementation item: remove the unused images (item 3). PR #1 remains the user's merge decision.
+
 ## Last session
 
 - **Agent:** Claude Code, 2026-09-29
@@ -29,7 +39,7 @@ Codex and Claude Code build this project in turns. Whoever has usage left picks 
 
 ## Next up (in order)
 
-1. **Codex: review Claude's routing commit** on PR #1 (the commit after `e934d72`). Watch the robots walk in both `npm run dev` and `npm run dev:static`.
+1. **Completed: Codex reviewed `d4c4767`** on PR #1. No blocking findings; see the review record above.
 2. ~~Routing performance~~: done (see Last session).
 3. **Remove the unused images** `dist/office.png`, `dist/walk-cycle.png` and `dist/worker.png` (about 4.5 MB, not referenced anywhere).
 4. **Spawn robots at their lounge slot or desk** instead of the door, so name tags don't overlap. Put `department` on each agent literal instead of assigning it by array index.
