@@ -8,7 +8,7 @@ Use this same repository in both tools, with a separate checkout/branch for each
 4. Give the reviewing tool the pull request URL and exact commit SHA. Ask for correctness, regressions, task-state consistency, accessibility and security review.
 5. Reviewer reports concrete findings, checks performed and untested areas. If no findings, say so without implying exhaustive correctness.
 6. Implementer fixes findings, reruns affected checks, and requests re-review of the new commit.
-7. The user merges when satisfied.
+7. The user merges when satisfied, and only once every "Merging to `main`" condition in `AGENTS.md` holds: CI green, head commit reviewed, no blocking findings, up to date with `main`, merged with a merge commit.
 
 ## Implementation prompt
 

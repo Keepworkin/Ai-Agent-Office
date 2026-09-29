@@ -29,6 +29,23 @@ The two tools build this project in turns; whichever one has usage left works wh
 - Address findings before handing the change back to the user for merging. No automatic merges or paid AI CI calls.
 - Never commit API keys, tokens, local .env files, or private task data.
 
+## Merging to `main`
+`main` is what gets deployed and what both agents start from, so it only moves through a reviewed pull request.
+- **Never push to `main` directly**, and never force-push it. Undo a bad merge with a revert PR.
+- **Merge only when all of these hold on the PR's current head commit:**
+  1. CI is green (`check` and `server` jobs).
+  2. The **other** agent has reviewed every commit since the last reviewed one, and the PR's *Cross-agent review* section names the reviewed SHA. A commit pushed after the review, even a docs-only one, needs its own review.
+  3. No blocking findings are open; non-blocking ones are fixed or listed under *Next up* in `docs/HANDOFF.md`.
+  4. The branch is up to date with `main` and has no conflicts. If `main` moved, merge `main` into the branch (don't rebase a branch someone else has reviewed) and let CI re-run.
+  5. The PR is out of draft, and the user has approved the merge. Agents don't merge on their own initiative.
+- **Merge method: "Create a merge commit".** Squash and rebase rewrite SHAs, which breaks the reviewed-commit references in PRs and `docs/HANDOFF.md`.
+- **Stacked work:** a PR built on another unmerged PR targets that PR's branch, not `main`. When the lower PR merges, retarget the upper one to `main`.
+- **After merging:**
+  - Delete the merged branch.
+  - Close any PR it superseded, with a comment linking the merge.
+  - Record the new `main` SHA in `docs/HANDOFF.md`.
+  - Start the next piece of work from a fresh branch off the latest `main`.
+
 ## Validation
 Run `npm run check` (frontend) and, after `npm install`, `npm run check:server` (typecheck + tests; no API keys or paid calls). Serve with `npm run dev` (server + dashboard on http://localhost:8787) or `npm run dev:static` (dashboard only) and verify the affected interactions in a browser.
 For task changes, cover available → working → needs review → approved/available; rejection/revision; stopped tasks; and invalid assignments. Keep keyboard, touch and narrow-screen behavior usable.

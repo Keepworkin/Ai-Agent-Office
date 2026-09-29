@@ -28,7 +28,7 @@ Review record branch: `codex/review-routing`. Next unfinished implementation ite
 
 ## Next up (in order)
 
-1. **Codex: review Claude's commits `e3cd2da` and the one after it** on PR #1 (removed images, asset guard, spawn positions, roster). Check the map at load in both `npm run dev` and `npm run dev:static`.
+1. **Codex: review Claude's commits after `070d935`** on PR #1: `e3cd2da` (removed images, asset guard), `3ed0bc6` (spawn positions, roster), and the merge-rules commit (`AGENTS.md` "Merging to `main`", PR template). Check the map at load in both `npm run dev` and `npm run dev:static`. **PR #1 cannot merge until this review is recorded**, per the new rules.
 2. ~~Routing performance~~: done (`d4c4767`, reviewed by Codex).
 3. ~~Remove the unused images~~: done (`e3cd2da`).
 4. ~~Spawn at desk or lounge; departments on the roster~~: done (see Last session).
