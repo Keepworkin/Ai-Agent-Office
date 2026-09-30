@@ -10,7 +10,7 @@ main{max-width:none}.pageheading{padding:22px 0}h1{font-size:30px}.stats{margin-
 .walker{display:block;width:100%;height:100%;background-image:url('robot-cycle.png');background-size:400% 200%;background-repeat:no-repeat;transform-origin:50% 92%}
 .character .ground-shadow{position:absolute;left:0;top:0;width:2cqw;height:.65cqw;border-radius:50%;background:#17232250;filter:blur(1px);transform:translate(-50%,-50%);z-index:-1}
 .character .bubble{position:absolute;bottom:calc(var(--person-height) + 3px);left:0;transform:translateX(-50%);margin:0}
-.character .nametag{position:absolute;top:5px;left:0;transform:translateX(-50%);margin:0}
+.character .nametag{position:absolute;top:5px;left:0;transform:translate(calc(-50% + var(--tag-x,0px)),var(--tag-y,0px));margin:0}
 .character .tooltip{left:0;bottom:calc(var(--person-height) + 26px)}
 /* Articulated gait: independent legs, planted-foot timing and a stable torso. */
 .walker{background-image:none!important;position:relative}
