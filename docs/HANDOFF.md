@@ -8,26 +8,29 @@ _Evidence only. The relay board (issue #6) is authoritative for ownership._
 
 ```text
 Relay handoff
-Task ID: T1-name-tags → next: REVIEW-PR<n>@<head> (PR number and SHA are on the board)
+Task ID: T2-live-startup → next: REVIEW-PR<n>@<head> (PR number and SHA are on the board)
 Status: ready_for_review
 Completed by: Claude
-PR / branch / exact head: new PR from claude/ai-agent-office-repo-9nv3o7 (based on main 3cc7122); exact head on the board
-Completed and verified: name tags never overlap. New dist/name-tags.js (OfficeNameTags.spread: slide sideways up to half a tag's width, else drop below), called from dist/app.js after each scene update and frame. npm run check passes, including the 5 new tests in scripts/check-name-tags.cjs. In headless Chromium, no overlaps at 360–1920 px in the initial, all-idle, all-working and all-review states, or while robots walk (0/60 samples at 390 and 1440 px), or at 100–150% zoom, in both demo and live mode (mock server). Clicking a moved tag still opens its robot. Nothing is slower (about 0.01 ms per frame, no long tasks).
+PR / branch / exact head: new PR from claude/ai-agent-office-repo-9nv3o7 (based on main ab5935b); exact head on the board
+Completed and verified: live mode no longer shows demo data before the first snapshot. index.html marks the page "connecting" before first paint (inline script, 1.5 s safety timeout) and adds a CONNECTING… badge; style.css hides the simulated data while connecting; live-office.js reveals after the first snapshot or a failed connection, resets the scene on the first snapshot so robots start at their live spots, and blocks "Assign a task" while connecting. Per-frame recordings in headless Chromium: live (normal and +600 ms slow) never shows DEMO MODE or demo stats/robots; static shows the demo after about 0.1 s; a server that never answers shows the demo at 1.5 s. Reconnect after a server restart keeps the same robot elements. Earlier live checks still pass (Stop mid-stream 5/5, revise, approve, workflow picker, disclosure text, 390 px no overflow, no page errors). npm run check passes.
 Merge gates: CI pending on the new head; not yet reviewed; no open findings; up to date with main
 Next owner: Codex
-Next action: REVIEW-PR<n>@<head>. At 390 px (npm run dev:static), no two name tags overlap in the lounge or at desks, including after zoom and while robots walk; desktop (1440 px) looks unchanged; clicking a tag opens its robot. Done when the review names the exact head and a handoff is on the board.
-Blockers / untested: touch devices, screen readers. Another robot's body or bubble can still cover a tag; this was already true before this PR and is tracked as T6-tags-over-robots.
-After completion: findings → changes_requested, owner Claude. No findings → ready_for_user_merge if all gates pass, owner User. Then T2-live-startup is next.
+Next action: REVIEW-PR<n>@<head>. In npm run dev, reload and confirm no DEMO MODE, demo stats or walking-from-desk robots appear before LIVE FEED; in npm run dev:static, the demo appears promptly; blocking /api/events shows CONNECTING… then the demo after 1.5 s. Done when the review names the exact head and a handoff is on the board.
+Blockers / untested: touch devices, screen readers, real providers. (A long task output can push Approve below the dialog's visible area; the button still works once scrolled, and this predates T2.)
+After completion: findings → changes_requested, owner Claude. No findings → ready_for_user_merge if all gates pass, owner User. Then T3-agent-desks is next.
 User action: none until then
 ```
 
 ## State of `main`
 
-- **`main` = `3cc7122`**, merged 2026-09-30 from PR Keepworkin/Ai-Agent-Office#7 with a merge commit. That PR is docs only: it records PR #4 and adds the "only claim what you can finish" usage rule. Codex reviewed exact head `a40726e`; CI was green; the owner approved.
-- Before that: PR Keepworkin/Ai-Agent-Office#4 (`ed40543`), with the workflow picker, the disclaimer fix and the relay protocol.
+- **`main` = `ab5935b`**, merged 2026-09-30 from PR Keepworkin/Ai-Agent-Office#8 (`T1-name-tags`) with a merge commit. Codex reviewed exact head `7782183`; CI was green; the owner approved.
+- Before that:
+  - PR Keepworkin/Ai-Agent-Office#7 (`3cc7122`): docs and the usage-claim rule.
+  - PR Keepworkin/Ai-Agent-Office#4 (`ed40543`): the workflow picker and the relay protocol.
 - What's on `main`:
   - The live Claude + ChatGPT server (`server/`) and the isometric robot office wired to it (`dist/`), with review, revise and stop.
   - The workflow picker, with side-by-side output per stage.
+  - Name tags that don't overlap one another.
   - The relay protocol (`docs/RELAY.md`), the relay board (issue #6), and the progress tracker (`docs/PROGRESS.md`).
 - **Start new work from a fresh branch off the latest `main`.** Old `codex/*` branches are fully merged; don't build on them.
 - **Not verified yet:** real OpenAI and Anthropic API calls (everything ran in mock mode), touch devices and screen readers.
@@ -36,8 +39,8 @@ User action: none until then
 
 Claim these on the relay board using exactly these task IDs. Details are in `docs/PROGRESS.md`.
 
-1. ~~`T1-name-tags`~~: built; its review is the current **Next action** above.
-2. `T2-live-startup`: **no demo flash in live mode.** The page draws the demo roster, then moves the robots once the first server snapshot arrives about 100 ms later. Hide the scene until the snapshot arrives or a short timeout passes, then fall back to the demo.
+1. ~~`T1-name-tags`~~: merged in PR #8.
+2. ~~`T2-live-startup`~~: built; its review is the current **Next action** above.
 3. `T3-agent-desks`: **Codex & Claude Code desks.** `POST /api/external/report {agentId, kind:"codex"|"claude-code", status, message}` already adds external agents to the server. Give them a spot in a vacant suite on the map, and add a small script plus hook config so each tool reports itself automatically.
 4. `T4-persistence`: save tasks and activity to a JSON file so a server restart doesn't wipe them.
 5. `T5-real-providers`: set the keys in `.env`, run one small task per provider, and record the results (the model names that worked, any errors).

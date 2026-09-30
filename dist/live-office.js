@@ -184,6 +184,8 @@ function describeWorkflowChoice() {
   $('#taskform button[type="submit"]').textContent = workflow ? 'Start the workflow ↗' : 'Send to their desk ↗';
 }
 openTask = function (id) {
+  // While connecting, the page doesn't yet know whether assignments go to the server or the demo.
+  if (document.body.classList.contains('connecting')) { notify('Connecting to the office…'); return; }
   if (!officeStore.live) return demoOpenTask(id);
   const available = agents.filter(a => a.state === 'idle');
   if (!available.length && !officeStore.workflows.length) { notify('All desks are busy. Approve or stop a task first.'); return; }
@@ -235,7 +237,12 @@ $('#taskform').onsubmit = async event => {
     notify('Task assigned to the server.');
   } catch (error) { notify(error.message); }
 };
-if (typeof EventSource !== 'undefined') {
+// Until the first snapshot arrives, or the connection fails, the page can't tell the live office from the static
+// demo, so index.html hides the simulated data behind "CONNECTING…". A static host (no /api/events) fails fast and
+// shows the demo; index.html's 1.5 s timeout covers a server that never answers.
+const revealOffice = () => document.body.classList.remove('connecting');
+if (typeof EventSource === 'undefined') revealOffice();
+else {
   const feed = new EventSource('/api/events');
   // Streaming sends a delta per token. Re-rendering the whole office for each
   // one froze frames and swallowed clicks, so deltas only refresh the open
@@ -244,7 +251,7 @@ if (typeof EventSource !== 'undefined') {
   const flush = () => {
     const full = fullFrame;
     fullFrame = outputFrame = false;
-    if (full) return projectSnapshot();
+    if (full) { projectSnapshot(); return revealOffice(); }
     const task = $('#detail').open && selectedTask();
     if (task) updateDetailInPlace(task);
   };
@@ -256,9 +263,11 @@ if (typeof EventSource !== 'undefined') {
   feed.onmessage = event => {
     try {
       const data = JSON.parse(event.data);
+      // First snapshot: drop the demo robots so they appear at their live spots instead of walking over from demo desks.
+      if (data.type === 'snapshot' && !officeStore.live) resetScene();
       OfficeLiveState.receive(officeStore, data);
       if (officeStore.live) schedule(data.type !== 'delta');
     } catch (error) { console.error('Invalid office event', error); }
   };
-  feed.onerror = () => { officeStore.connected = false; if (officeStore.live) render(); };
+  feed.onerror = () => { officeStore.connected = false; if (officeStore.live) render(); else revealOffice(); };
 }
