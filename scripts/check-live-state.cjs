@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { createStore, receive, taskFor, outputText } = require('../dist/live-state.js');
+const { createStore, receive, taskFor } = require('../dist/live-state.js');
 const agent = { id: 'atlas', currentTaskId: 'task-1' };
 const task = { id: 'task-1', createdAt: '2026-09-28', status: 'in_progress', steps: [{ agentId: 'atlas', stage: 0, status: 'working', output: '' }] };
 const snapshot = () => ({ type: 'snapshot', snapshot: { agents: [agent], tasks: [task], workflows: [], activity: [] } });
@@ -48,13 +48,17 @@ test('snapshot activity (oldest first on the server) is stored newest first, the
   receive(state, { type: 'activity', entry: { id: 'c', message: 'newest' } });
   assert.deepEqual(state.activity.map(e => e.message), ['newest', 'newer', 'oldest']);
 });
-test('output transcript labels mock authors and falls back per step', () => {
+test('stagesOf groups steps by stage, keeping each step index for in-place updates', () => {
+  const task = { steps: [{ agentId: 'quill', stage: 0 }, { agentId: 'atlas', stage: 0 }, { agentId: 'orbit', stage: 1 }] };
+  const stages = require('../dist/live-state.js').stagesOf(task);
+  assert.deepEqual(stages.map(s => s.map(({ step, index }) => `${step.agentId}#${index}`)), [['quill#0', 'atlas#1'], ['orbit#2']]);
+});
+test('describeStages names agents with their provider, stage by stage', () => {
+  const { describeStages } = require('../dist/live-state.js');
   const state = createStore();
-  receive(state, { type: 'snapshot', snapshot: { agents: [{ id: 'atlas', name: 'Atlas', mock: true }], tasks: [], workflows: [], activity: [] } });
-  const text = outputText(state, { steps: [
-    { agentId: 'atlas', status: 'done', output: 'Findings' },
-    { agentId: 'byte', status: 'failed', output: '', error: 'boom' },
-    { agentId: 'orbit', status: 'pending', output: '' },
-  ] });
-  assert.equal(text, 'Atlas [MOCK] — done\nFindings\n\nbyte — failed\nboom\n\norbit — pending\nWaiting for output…');
+  receive(state, { type: 'snapshot', snapshot: { agents: [
+    { id: 'quill', name: 'Quill', provider: 'anthropic' }, { id: 'atlas', name: 'Atlas', provider: 'openai' }, { id: 'orbit', name: 'Orbit', provider: 'anthropic' },
+  ], tasks: [], workflows: [], activity: [] } });
+  assert.equal(describeStages(state, [['quill', 'atlas'], ['orbit']]), 'Stage 1: Quill (Claude) + Atlas (ChatGPT) → Stage 2: Orbit (Claude)');
+  assert.equal(describeStages(state, [['ghost']]), 'Stage 1: ghost');
 });

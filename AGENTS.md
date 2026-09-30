@@ -3,10 +3,17 @@
 Build an interactive office dashboard where AI teammates have visible tasks and an office manager can inspect and review their work.
 
 ## Relay: Codex and Claude Code take turns
-The two tools build this project in turns; whichever one has usage left works while the other waits for its limit to reset.
-- **Start of every session:** read `docs/HANDOFF.md` first. Pick up the "Next up" item unless the user says otherwise.
-- **Before you stop** (task done, or usage running low): commit, push your branch, and update `docs/HANDOFF.md` — what you finished, what's half-done, the exact next step, and how to verify. An unpushed change is lost to the other agent.
-- Commit small and often so a sudden usage cutoff loses little.
+The two tools build this project in turns; whichever one has usage left works while the other waits for its limit to reset. **The owner (Daniel) should not have to relay messages between you.** Follow **`docs/RELAY.md`**, the single relay protocol. In short:
+- **The relay board, issue #6, is the only authority on who owns a task.** `docs/HANDOFF.md` and PR comments are evidence only; they never override a live board claim.
+- **Start of every session:** fetch, then read the board first. If the newest board comment for a task ID makes you its owner, do it now without asking. If the other agent owns it, don't touch it.
+- **Claim before starting**, using the stable task ID (`T<n>-…`, `REVIEW-PR<n>@<sha>`, `FIX-PR<n>-<review id>`). Re-read the board after claiming, before editing and before pushing. Claims don't expire by time; if you're interrupted, post `BLOCKED` with the partial SHA.
+- **Stages are distinct:** `ready_for_review` ≠ `reviewed` ≠ `ready_for_user_merge` (all merge gates pass on the exact head) ≠ `done` (merged into `main`). Merging into another branch is `integrated`, not done. Any new commit needs a new review.
+- **Watch usage:** check yours at session start, before substantial work, every 5 minutes (after each small step below 10%), using the lowest window, or "unknown" if you can't see it. **At 5% or less:** push, `RELEASE` your claim, and hand the rest to the other agent. That handoff is not completion. See "Usage and wrap-up" in `docs/RELAY.md`.
+- **Done means done:** meet the checklist for your turn's type in `docs/RELAY.md`, post the handoff with the exact SHA on the board, then **stop**.
+- **After implementing:** update the ▶ Next action block and `docs/PROGRESS.md` (status, your PR's log entry, **its UI changes**). Then commit, push and post the handoff.
+- **After a review only:** post the review and the handoff; no commits.
+- End every update to the owner with **Next steps** and who owns each one. Only the owner approves merges to `main`.
+- Commit small and often, so a sudden usage cutoff loses little.
 
 ## Current implementation
 - **Frontend — `dist/`** (static, no build step). `dist/` is the authored source, not disposable build output.
