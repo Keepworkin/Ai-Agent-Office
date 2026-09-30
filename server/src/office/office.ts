@@ -17,6 +17,10 @@ import type {
 const MAX_ACTIVITY = 200;
 const MAX_TASKS = 100;
 
+const EXTERNAL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+const EXTERNAL_STATUSES: readonly string[] = ["working", "idle", "waiting", "offline"];
+const EXTERNAL_KINDS: readonly string[] = ["codex", "claude-code", "other"];
+
 export class Office {
   private agents = new Map<string, AgentState>();
   private tasks = new Map<string, Task>();
@@ -328,13 +332,26 @@ export class Office {
    * office floor. Unknown ids get a desk automatically.
    */
   reportExternal(report: ExternalReport): AgentState {
-    if (!report.agentId?.trim()) throw new OfficeError("agentId is required");
+    // Reports come from outside the office, and ids and statuses end up in the dashboard's markup and selectors,
+    // so only plain ids and known values get in.
+    if (typeof report.agentId !== "string" || !EXTERNAL_ID.test(report.agentId)) {
+      throw new OfficeError("agentId must be 1-64 letters, digits, '.', '_' or '-', starting with a letter or digit");
+    }
+    if (report.status !== undefined && !EXTERNAL_STATUSES.includes(report.status)) {
+      throw new OfficeError(`status must be one of: ${EXTERNAL_STATUSES.join(", ")}`);
+    }
+    if (report.kind !== undefined && !EXTERNAL_KINDS.includes(report.kind)) {
+      throw new OfficeError(`kind must be one of: ${EXTERNAL_KINDS.join(", ")}`);
+    }
+    for (const field of ["name", "message"] as const) {
+      if (report[field] !== undefined && typeof report[field] !== "string") throw new OfficeError(`${field} must be a string`);
+    }
     const kind = report.kind ?? "other";
     let agent = this.agents.get(report.agentId);
     if (!agent) {
       agent = this.addAgent({
         id: report.agentId,
-        name: report.name ?? (kind === "codex" ? "Codex" : kind === "claude-code" ? "Claude Code" : report.agentId),
+        name: report.name?.trim().slice(0, 60) || (kind === "codex" ? "Codex" : kind === "claude-code" ? "Claude Code" : report.agentId),
         role: kind === "codex" ? "Codex CLI" : kind === "claude-code" ? "Claude Code CLI" : "External agent",
         provider: "external",
         model: kind,

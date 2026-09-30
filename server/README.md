@@ -50,7 +50,7 @@ The roster and workflows live in `src/office/roster.ts`.
 | POST | `/api/tasks/:id/approve` | Accept work in review |
 | POST | `/api/tasks/:id/revise` | `{ feedback }`: re-run the final stage with feedback |
 | POST | `/api/tasks/:id/cancel` | Cancel a running task |
-| POST | `/api/external/report` | `{ agentId, kind: "codex" \| "claude-code", status?, message? }`: puts an external coding agent on the office floor |
+| POST | `/api/external/report` | `{ agentId, kind: "codex" \| "claude-code" \| "other", status?: "working" \| "idle" \| "waiting" \| "offline", name?, message? }`: puts an external coding agent on the office floor. `agentId` is 1–64 letters, digits, `.`, `_` or `-`; anything else is rejected with 400 |
 
 Event and data shapes are in `src/types.ts`. Any UI (including the static `dist/` office) can use `/api/events`.
 
@@ -63,7 +63,7 @@ curl -s -X POST localhost:8787/api/external/report -H 'content-type: application
   -d '{"agentId":"codex-1","kind":"codex","message":"Running tests"}'
 ```
 
-You can wire this into Claude Code hooks or Codex's `notify` setting so their sessions show up automatically.
+Or use `npm run report -- --agent codex --status working --message "Running tests"`. In live mode, Codex and Claude Code get a robot in Suite 03 and Suite 04 on the map. To report automatically from Claude Code hooks or Codex's `notify` setting (opt-in), see `docs/AGENT-DESKS.md`.
 
 ## Test
 

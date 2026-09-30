@@ -156,5 +156,26 @@ describe("Office", () => {
     office.reportExternal({ agentId: "codex-laptop", status: "idle" });
     expect(office.snapshot().agents.find((a) => a.id === "codex-laptop")!.status).toBe("idle");
     expect(() => office.createTask({ prompt: "x", stages: [["codex-laptop"]] })).toThrow(/external/);
+
+    office.reportExternal({ agentId: "codex-laptop", status: "offline" });
+    expect(office.snapshot().agents.find((a) => a.id === "codex-laptop")!.status).toBe("offline");
+  });
+
+  it("rejects external reports whose id, status or kind could break the dashboard", () => {
+    const office = makeOffice();
+    const report = (r: unknown) => () => office.reportExternal(r as never);
+    expect(report({ agentId: 'probe" data-x="1', kind: "codex" })).toThrow(/agentId/);
+    expect(report({ agentId: "<b>", kind: "codex" })).toThrow(/agentId/);
+    expect(report({ agentId: "-leading-dash" })).toThrow(/agentId/);
+    expect(report({ agentId: "x".repeat(65) })).toThrow(/agentId/);
+    expect(report({ agentId: 42 })).toThrow(/agentId/);
+    expect(report({})).toThrow(/agentId/);
+    expect(report({ agentId: "codex", status: 'idle" data-x="1' })).toThrow(/status/);
+    expect(report({ agentId: "codex", status: "review" })).toThrow(/status/);
+    expect(report({ agentId: "codex", kind: "hacker" })).toThrow(/kind/);
+    expect(report({ agentId: "codex", message: { html: true } })).toThrow(/message/);
+    // Nothing was added by the rejected reports; a plain id still works.
+    expect(office.snapshot().agents.some((a) => a.provider === "external")).toBe(false);
+    expect(office.reportExternal({ agentId: "claude-code.laptop_2", kind: "claude-code" }).id).toBe("claude-code.laptop_2");
   });
 });

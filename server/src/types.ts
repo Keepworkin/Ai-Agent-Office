@@ -120,6 +120,7 @@ export interface ExternalReport {
   agentId: string;
   name?: string;
   kind?: "claude-code" | "codex" | "other";
-  status?: "working" | "idle" | "waiting";
+  /** "offline" takes the agent off the office floor. */
+  status?: "working" | "idle" | "waiting" | "offline";
   message?: string;
 }

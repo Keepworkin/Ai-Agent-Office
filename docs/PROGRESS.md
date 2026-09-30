@@ -2,7 +2,7 @@
 
 This is the record of what has been built, what's in progress, and what remains, with a log of every pull request and its UI changes. **Every PR updates this file** (see "Relay" in `AGENTS.md`). For who acts next, see the Next action block at the top of `docs/HANDOFF.md`.
 
-_Last updated: 2026-09-30, `T1-name-tags` PR (Claude Code). `main` = `3cc7122`._
+_Last updated: 2026-09-30, `T2-live-startup` PR (Claude Code). `main` = `ab5935b`._
 
 ## Status at a glance
 
@@ -19,14 +19,14 @@ _Last updated: 2026-09-30, `T1-name-tags` PR (Claude Code). `main` = `3cc7122`._
 - [x] Live-mode disclaimer fix: the note about real vs. simulated AI calls is correct when the server runs (PR #4)
 - [x] One relay protocol (`docs/RELAY.md`) with the relay board (issue #6), task IDs, completion states, usage and wrap-up rules, and this tracker (PR #4, including Codex's PR #5)
 - [x] Rule "only claim what you can finish": below about 20% usage, only small tasks; browser work hands off at 10% (PR #7)
+- [x] Robot name tags no longer overlap one another in the tested widths (360–1920 px), states, zoom levels and while walking (PR #8, `T1-name-tags`)
 
 ### In progress
-- [ ] `T1-name-tags`: name tags no longer overlap at any screen width. The PR is up for Codex's review; its state is on the relay board (issue #6).
+- [ ] `T2-live-startup`: live mode no longer shows demo data before the server's first snapshot. The PR is up for Codex's review; its state is on the relay board (issue #6).
+- [ ] `T3-agent-desks`: Codex and Claude Code get robots in Suites 03 and 04, plus a reporting script and opt-in hooks. Added to PR #9 as a second commit, so that finished work isn't held only on this machine.
 
 ### Remaining (in order)
 Task IDs are stable. Claim them on the relay board (issue #6) using exactly these IDs.
-2. [ ] `T2-live-startup`: live mode briefly shows the demo robots (about 0.1 s) before server data arrives
-3. [ ] `T3-agent-desks`: desks for Codex and Claude Code sessions in a vacant suite, plus scripts so each tool reports its own activity
 4. [ ] `T4-persistence`: save tasks and activity to disk so a server restart doesn't wipe them
 5. [ ] `T5-real-providers`: try the real Claude and OpenAI APIs once with keys, and record the results
 6. [ ] `T6-tags-over-robots`: a robot standing lower on the map can hide another robot's name tag or bubble (e.g. Quill's "✓ Review" bubble covers Byte's tag at 390 px). This happened before `T1` too. Draw name tags in their own layer above all robots.
@@ -42,19 +42,61 @@ Task IDs are stable. Claim them on the relay board (issue #6) using exactly thes
 
 Newest first. "UI changes" describes what you'd see in the browser.
 
-### Next PR: name tags never overlap (`T1-name-tags`, open)
+### PR #9, second commit: desks for Codex and Claude Code (`T3-agent-desks`, open)
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7`, on top of T2's `7956bdc` in PR #9. Codex hadn't started reviewing PR #9, so this was pushed there rather than held unpushed. **Author:** Claude Code. **Reviewer:** Codex.
+- **Contents:**
+  - `dist/navigation.js`: walkable floor for Suites 03 and 04 and their doors off the corridor junction. `scripts/check-navigation.cjs` now checks 196 routes, including into both suites, and that the suite walls still block the hallway.
+  - `dist/app.js`: suite rooms for the Codex and Claude Code departments. Robots are removed when they leave, suite signs show their occupants, and the agent count and roster size follow the actual team.
+  - `dist/live-office.js`:
+    - External agents of kind `codex` / `claude-code` that aren't offline become robots in their suite, with names and roles escaped.
+    - Their dialog shows the reported activity and has no task buttons.
+    - The Assign dialog never offers them.
+  - `dist/style.css`: occupied suite signs, compact on narrow maps.
+  - `scripts/report-activity.mjs` (new; `npm run report`): posts a status to `/api/external/report`.
+    - It has a plain mode, a `--claude-hook` mode that reads hook events from stdin, and a `--codex-notify` mode that reads the `notify` argument.
+    - It always exits 0, gives up after 1.5 s, and never sends prompt or reply text.
+  - `scripts/check-report-activity.cjs` (new, in `npm run check`): 4 tests against a fake office.
+  - `docs/AGENT-DESKS.md` (new): opt-in setup for Claude Code hooks and Codex `notify`, with limits. Nothing is enabled in this repo by default.
+- **Fix for Codex's review 5372157895 (P2):** external `agentId` and `status` values reached HTML attributes unescaped. A quoted id injected attributes, reproduced both by Codex and by Claude; a hostile snapshot produced 10 injected elements and attributes, and the literal id couldn't be selected.
+  - **Server:** `reportExternal` now accepts only plain ids (1–64 letters, digits, `.`, `_` or `-`), the statuses `working`, `idle`, `waiting` and `offline` (the type now includes `offline`, which the script already sent), the kinds `codex`, `claude-code` and `other`, and string names and messages. Anything else gets a 400; a numeric id used to crash with a 500. 1 new server test (11 total).
+  - **Page:** `dist/app.js` escapes ids, states and emoji wherever it writes markup (roster, overview, name tags), and focus restoration uses `CSS.escape`. `dist/live-office.js` keeps ids raw and shows an unknown external status as idle.
+  - **Browser checks:** the server rejects every bad report. A hostile snapshot fed straight into the page gives 0 injected elements or attributes, exactly one roster card with the literal id, and clicking it opens that agent. Focus stays on that card across renders. The desks flow is unchanged.
+- **UI changes:**
+  - **Live mode:** a Codex or Claude Code robot appears at a desk in Suite 03 or Suite 04 when that tool reports in, and walks out when it reports `offline`. The suite sign switches from "For Lease" to "Codex" / "Claude Code" with a count of those working. The agent count and roster include them (e.g. "08 agents").
+  - **Static demo:** unchanged; the suites stay "For Lease".
+
+### Next PR: no demo data before the live feed connects (`T2-live-startup`, open)
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `ab5935b`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.
+- **Problem, measured per frame in headless Chromium:**
+  - In live mode, the page showed the demo for about 290 ms (about 675 ms on a slower connection) before the first server snapshot: "DEMO MODE", 3 robots working, 12 tasks completed, and a made-up "Quill finished a draft" event.
+  - Then the robots that were at demo desks walked across the office to their live spots.
+- **Contents:**
+  - `dist/index.html`: a one-line inline script marks the page `connecting` before first paint, with a 1.5 s safety timeout. It also adds a "CONNECTING…" badge.
+  - `dist/style.css`: while connecting, the simulated data is hidden (the layout keeps its space) and the badge replaces "DEMO MODE". The hidden parts are the stats, robots, activity, review box, roster, overview cards, and the sidebar and legend notes.
+  - `dist/live-office.js`:
+    - reveals the page after the first snapshot is drawn, or when the connection fails (a static host fails fast);
+    - on the first snapshot, drops the demo robots so each appears at its live spot;
+    - while connecting, "Assign a task" says "Connecting to the office…" instead of opening the demo dialog.
+- **UI changes:**
+  - **Live:** "CONNECTING…" for a moment (about 0.1 s here), then the live office. Demo data never shows, and robots start at their live spots.
+  - **Static hosting:** "CONNECTING…" for about 0.1 s, then the demo as before.
+  - **A server that never answers:** the demo appears after 1.5 s. If the server answers later, the office switches to live as before.
+  - **Reconnecting after a server restart:** unchanged ("RECONNECTING", then live), with no robot reset.
+
+### PR #8: name tags don't overlap (`T1-name-tags`, merged 2026-09-30, merge commit `ab5935b`)
 - **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `3cc7122`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.
 - **Contents:**
   - `dist/name-tags.js` (new): `OfficeNameTags.spread`, a DOM-free layout step. Tags are placed top to bottom; one that would overlap slides sideways (at most half its width, so it stays under its robot), otherwise drops just below the tag it hits.
-  - `dist/app.js`: `spreadNameTags()` runs after each scene update and animation frame, from the robots' map coordinates and cached tag sizes (re-measured when the map resizes, e.g. zoom). No layout reads per frame; about 0.01 ms per call.
+  - `dist/app.js`: `spreadNameTags()` runs after each scene update and animation frame, from the robots' map coordinates and cached tag sizes (re-measured when the map resizes, e.g. zoom). Tag sizes are cached (only the map's width and height are read each frame); about 0.01 ms per call.
   - `dist/style.css`: tags move by `--tag-x` / `--tag-y`.
   - `scripts/check-name-tags.cjs` (new, part of `npm run check`): 5 tests, including the 390 px lounge case and 2000 random crowds with no overlaps.
 - **UI changes:**
-  - **Name tags never overlap**, at any width or zoom, standing or walking. Measured before: overlaps at every width up to 1024 px, even for desks at 390 px, and in 60 of 60 samples while robots walked at 390 px. After: none at 360–1920 px in any state, and 0 of 60 while walking.
+  - **Name tags don't overlap one another** in the tested coverage: 360–1920 px, 100–150% zoom, standing or walking. Measured before: overlaps at every width up to 1024 px, even for desks at 390 px, and in 60 of 60 samples while robots walked at 390 px. After: none at 360–1920 px in any state, and 0 of 60 while walking.
   - In a crowded lounge, the outer robots' tags share a row and the centre robot's tag sits just below.
-  - Desktop widths (1280 px and up) look the same as before, because nothing overlapped there.
+  - At desktop widths (1280 px and up) the resting layout looks the same as before. Tags move only when robots converge, which is the collision handling working.
   - Clicking a moved tag still opens that robot.
 - **Known, not in this PR:** another robot's body or bubble can still cover a tag (`T6-tags-over-robots`); this was already the case before.
+- **Review:** Codex, exact head `7782183` (review 5371099717): no blocking findings, with its own browser checks at 390 px (moving, 150% zoom, clicking a moved tag) and 1440 px. CI green (run 36765015904). Codex's three wording notes (tested coverage instead of "any width", cached tag sizes instead of "no layout reads", desktop tags can move when robots converge) are applied above.
 
 ### PR #7: post-merge record and usage-claim rule (`REQ-usage-claim`, merged 2026-09-30, merge commit `3cc7122`)
 - **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `ed40543`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.
