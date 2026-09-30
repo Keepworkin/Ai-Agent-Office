@@ -8,21 +8,20 @@ _Evidence only. The relay board (issue #6) is authoritative for ownership._
 
 ```text
 Relay handoff
-Task ID: T2-live-startup + T3-agent-desks → next: REVIEW-PR9@<head> (exact SHA on the board)
+Task ID: FIX-PR9-5372157895 → next: REVIEW-PR9@<head> (exact SHA on the board)
 Status: ready_for_review
 Completed by: Claude
-PR / branch / exact head: PR #9, claude/ai-agent-office-repo-9nv3o7 (based on main ab5935b); two commits, 7956bdc (T2) then the T3 commit; exact head on the board
+PR / branch / exact head: PR #9, claude/ai-agent-office-repo-9nv3o7; exact head on the board
 Completed and verified:
-- T2: live mode shows CONNECTING… instead of demo data until the first snapshot; static falls back after about 0.1 s; a silent server falls back at 1.5 s; robots start at their live spots. Per-frame browser recordings; earlier live checks still pass.
-- T3: Codex and Claude Code get robots in Suites 03 and 04 (now walkable), with occupied signs, when they report through scripts/report-activity.mjs (plain, --claude-hook, --codex-notify; always exits 0, 1.5 s timeout, never sends prompt or reply text). docs/AGENT-DESKS.md covers opt-in hooks. Browser: report in, robots at their suite desks, signs switch, no task buttons, not offered in Assign, offline removes the robot and restores the sign.
-- npm run check: 16 tests, 196 routes.
-Merge gates: CI pending on the new head; not yet reviewed; no open findings; up to date with main
+- P2 fixed at both layers:
+  - Server: reportExternal accepts only plain ids (/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/), statuses working/idle/waiting/offline, kinds codex/claude-code/other, and string name and message. Anything else gets a 400 (a numeric id used to give a 500). New server test.
+  - Page: app.js escapes ids, states and emoji at every markup sink, and focus restoration uses CSS.escape. live-office.js keeps ids raw and normalises unknown external states to idle.
+- Reproduced first on 2ae3089: the quoted id was accepted, 2 injected attributes on the page, and 10 from a hostile snapshot. After the fix: every bad report gets a 400; a hostile snapshot fed straight into the page gives 0 injected elements or attributes and one roster card with the literal id, which opens that agent; focus is kept across renders.
+- npm run check (16 tests, 196 routes) and npm run check:server (typecheck + 11 tests) pass.
+Merge gates: CI pending on the new head; the fix isn't reviewed yet; no open findings; up to date with main
 Next owner: Codex
-Next action: REVIEW-PR9@<head>, both commits.
-- T2 as in the earlier handoff: no DEMO MODE before LIVE FEED; prompt static fallback; blocked /api/events → demo at 1.5 s.
-- T3: with npm run dev, run `npm run report -- --agent codex --status working --message test` and see the Codex robot in Suite 03; `--status offline` removes it; `npm run check` covers the script.
-Done when the review names the exact head and a handoff is on the board.
-Blockers / untested: touch devices, screen readers, real providers; the Codex notify format isn't verified against a live Codex install; bubbles and robot bodies can cover tags (T6).
+Next action: REVIEW-PR9@<head>. Re-check the P2 with your quoted-id probe (it should now get a 400), and complete the startup checks you listed as not signed off: first-paint recordings, delayed and blocked /api/events 1.5 s fallback, and hook/notify integration as far as you can. Done when the review names the exact head and a handoff is on the board.
+Blockers / untested: touch devices, screen readers, real providers; the Codex notify format isn't verified against a live Codex install; bubbles and bodies can cover tags (T6).
 After completion: findings → changes_requested, owner Claude. No findings → ready_for_user_merge if all gates pass, owner User. Then T4-persistence is next.
 User action: none until then
 ```

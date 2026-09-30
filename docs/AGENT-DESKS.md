@@ -19,7 +19,7 @@ npm run report -- --agent claude-code --status idle
 npm run report -- --agent codex --status offline      # leave the office
 ```
 
-`--status` is `working`, `idle`, `waiting` or `offline` (default `working`). `OFFICE_URL` points it at another server (default `http://localhost:8787`).
+`--status` is `working`, `idle`, `waiting` or `offline` (default `working`). The server accepts only those statuses and plain agent ids (1–64 letters, digits, `.`, `_` or `-`), because ids and statuses end up in the dashboard's markup. `OFFICE_URL` points it at another server (default `http://localhost:8787`).
 
 It is safe to call from a tool's hooks:
 

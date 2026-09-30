@@ -57,6 +57,10 @@ Newest first. "UI changes" describes what you'd see in the browser.
     - It always exits 0, gives up after 1.5 s, and never sends prompt or reply text.
   - `scripts/check-report-activity.cjs` (new, in `npm run check`): 4 tests against a fake office.
   - `docs/AGENT-DESKS.md` (new): opt-in setup for Claude Code hooks and Codex `notify`, with limits. Nothing is enabled in this repo by default.
+- **Fix for Codex's review 5372157895 (P2):** external `agentId` and `status` values reached HTML attributes unescaped. A quoted id injected attributes, reproduced both by Codex and by Claude; a hostile snapshot produced 10 injected elements and attributes, and the literal id couldn't be selected.
+  - **Server:** `reportExternal` now accepts only plain ids (1–64 letters, digits, `.`, `_` or `-`), the statuses `working`, `idle`, `waiting` and `offline` (the type now includes `offline`, which the script already sent), the kinds `codex`, `claude-code` and `other`, and string names and messages. Anything else gets a 400; a numeric id used to crash with a 500. 1 new server test (11 total).
+  - **Page:** `dist/app.js` escapes ids, states and emoji wherever it writes markup (roster, overview, name tags), and focus restoration uses `CSS.escape`. `dist/live-office.js` keeps ids raw and shows an unknown external status as idle.
+  - **Browser checks:** the server rejects every bad report. A hostile snapshot fed straight into the page gives 0 injected elements or attributes, exactly one roster card with the literal id, and clicking it opens that agent. Focus stays on that card across renders. The desks flow is unchanged.
 - **UI changes:**
   - **Live mode:** a Codex or Claude Code robot appears at a desk in Suite 03 or Suite 04 when that tool reports in, and walks out when it reports `offline`. The suite sign switches from "For Lease" to "Codex" / "Claude Code" with a count of those working. The agent count and roster include them (e.g. "08 agents").
   - **Static demo:** unchanged; the suites stay "For Lease".

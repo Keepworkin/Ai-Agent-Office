@@ -142,6 +142,7 @@ function externalDetail(agent) {
     ${agent.lastActiveAt ? `<span class="small">Last report ${escape(new Date(agent.lastActiveAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</span>` : ''}</div>
     <p class="small">This desk shows what the tool reports through <code>scripts/report-activity.mjs</code>. The office can't assign it tasks.</p>`;
 }
+const externalStates = ['working', 'idle', 'waiting'];
 function projectSnapshot() {
   agents = initial.map(robot => {
     const agent = officeStore.agents.find(agent => agent.id === robot.id);
@@ -159,8 +160,10 @@ function projectSnapshot() {
     const slot = (suiteTeams[department] = (suiteTeams[department] || 0) + 1) - 1;
     deskSlots[agent.id] = slot % 3;
     // app.js interpolates names and roles into markup unescaped; these come from whatever the tool reported.
+    // Ids stay raw (they're matched against officeStore); app.js escapes them where it writes markup.
     agents.push({ id: agent.id, name: escape(agent.name), role: escape(agent.role), department, emoji: agent.avatar || '🤖',
-      external: true, state: agent.status, task: agent.activity || 'No activity reported yet', progress: 0 });
+      external: true, state: externalStates.includes(agent.status) ? agent.status : 'idle',
+      task: agent.activity || 'No activity reported yet', progress: 0 });
   }
   completed = officeStore.tasks.filter(task => task.status === 'done').length;
   events = officeStore.activity.slice(0, 5).map(entry => ({ name: 'Office', text: entry.message,
