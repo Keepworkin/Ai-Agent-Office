@@ -8,6 +8,7 @@ The two tools build this project in turns; whichever one has usage left works wh
 - **Start of every session:** fetch, then read the board first. If the newest board comment for a task ID makes you its owner, do it now without asking. If the other agent owns it, don't touch it.
 - **Claim before starting**, using the stable task ID (`T<n>-…`, `REVIEW-PR<n>@<sha>`, `FIX-PR<n>-<review id>`). Re-read the board after claiming, before editing and before pushing. Claims don't expire by time; if you're interrupted, post `BLOCKED` with the partial SHA.
 - **Stages are distinct:** `ready_for_review` ≠ `reviewed` ≠ `ready_for_user_merge` (all merge gates pass on the exact head) ≠ `done` (merged into `main`). Merging into another branch is `integrated`, not done. Any new commit needs a new review.
+- **Watch usage:** check yours at session start, before substantial work, every 5 minutes (after each small step below 10%), using the lowest window, or "unknown" if you can't see it. **At 5% or less:** push, `RELEASE` your claim, and hand the rest to the other agent. That handoff is not completion. See "Usage and wrap-up" in `docs/RELAY.md`.
 - **Done means done:** meet the checklist for your turn's type in `docs/RELAY.md`, post the handoff with the exact SHA on the board, then **stop**.
 - **After implementing:** update the ▶ Next action block and `docs/PROGRESS.md` (status, your PR's log entry, **its UI changes**). Then commit, push and post the handoff.
 - **After a review only:** post the review and the handoff; no commits.

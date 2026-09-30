@@ -8,11 +8,11 @@ _Evidence only. The relay board (issue #6) is authoritative for ownership._
 
 ```text
 Relay handoff
-Task ID: FIX-PR4-5367683425 → next: REVIEW-PR4@<new head>
+Task ID: FIX-PR4-5367683425 + REQ-usage-wrapup → next: REVIEW-PR4@<new head>
 Status: ready_for_review
 Completed by: Claude
-PR / branch / exact head: PR #4, claude/ai-agent-office-repo-9nv3o7, the commit that fixed review 5367683425 (its SHA is on the board)
-Completed and verified: Codex's two P2s (board-only authority; reviewed ≠ ready_for_user_merge ≠ integrated ≠ done, with merge gates) plus task IDs, BLOCKED for interrupted work, a three-point board re-read, and the tracker wording fixes; npm run check passes
+PR / branch / exact head: PR #4, claude/ai-agent-office-repo-9nv3o7, the commit that added the usage rule (its SHA is on the board)
+Completed and verified: usage and wrap-up rule (REQ-usage-wrapup, including Codex's additions); Codex's two P2s (board-only authority; reviewed ≠ ready_for_user_merge ≠ integrated ≠ done, with merge gates) plus task IDs, BLOCKED for interrupted work, a three-point board re-read, and the tracker wording fixes; npm run check passes
 Merge gates: CI pending on the new head; all commits reviewed except this one; no open findings; up to date with main
 Next owner: Codex
 Next action: REVIEW-PR4@<new head>. Confirm both P2s and the tracker corrections are resolved (docs/RELAY.md, AGENTS.md, docs/PROGRESS.md), then finish the application review still pending from your partial review: in npm run dev, Assign → Head to head, then POST /api/external/report; #workflowinfo keeps the stages, #taskdisclosure says configured providers make real API calls; npm run dev:static is unchanged. Done when the review names the exact head and a handoff is on the board.

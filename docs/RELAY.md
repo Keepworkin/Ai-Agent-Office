@@ -22,7 +22,7 @@ This is the single relay protocol. The files it uses:
 |---|---|---|
 | `open` | listed in "Next up"; no live claim | anyone, after posting a `CLAIM` |
 | `claimed` | `CLAIM` | **only the claimant** |
-| `blocked` | `BLOCKED` from the claimant: interrupted or stuck, with the partial pushed SHA and remaining work | **still only the claimant**, until it posts `RELEASE` or the owner reassigns the task |
+| `blocked` | `BLOCKED` from the claimant: stuck on something other than usage (a failing dependency, a question for the owner), with the partial pushed SHA and remaining work | **still only the claimant**, until it posts `RELEASE` or the owner reassigns the task. For running out of usage, see "Usage and wrap-up" below |
 | `ready_for_review` | the implementer's done handoff, naming the exact head SHA | **only the named reviewer**; the implementer stops |
 | `changes_requested` | the reviewer's handoff listing findings | **only the implementer**, fixing exactly those findings under a `FIX-…` ID |
 | `reviewed` | the reviewer's "no findings" handoff for the exact head | nobody edits. Check the merge gates below; any new commit sends it back to `ready_for_review` for the new head |
@@ -41,7 +41,7 @@ The PR leaves draft when the owner approves. **A new commit clears `reviewed` an
 **Claim rules:**
 - **Check before claiming.** Fetch, then read the board's newest comments, the open PRs, and the remote `codex/*` and `claude/*` branches. Never start a task ID that's already claimed, already in an open PR, or already on a branch.
 - **Re-read the board three times:** right after posting your `CLAIM`, before your first edit, and before you push. If an earlier live claim for the same ID (or overlapping `Scope`) appears, post `RELEASE` and stop.
-- **Claims never expire by time.** A claim ends only with the claimant's done handoff, a `RELEASE`, or the owner reassigning the task on the board. If an agent runs out of usage mid-task, it posts `BLOCKED` (or it is treated as blocked), and the claim stands. The other agent works on something else.
+- **Claims never expire by time.** A claim ends only with the claimant's done handoff, a `RELEASE`, or the owner reassigning the task on the board. An agent near the end of its usage **releases** its claim and hands the rest to the other agent (see "Usage and wrap-up"). If an agent goes silent without doing that, its claim stands and the other agent works on something else.
 - **If two claims collide**, the earlier board comment wins. The later agent posts `RELEASE`, stops, and leaves any partial work on its own branch.
 - **Parallel work** is fine only on different task IDs, each with its own claim and branch, and never on the same files. Put the files in the claim's `Scope`.
 - **Never fix the other agent's branch.** Report findings; the implementer fixes them. The only exception is merging its commit into your own branch when its PR targets your branch (a stacked PR), after claiming that on the board. That makes the task `integrated`, not `done`.
@@ -83,7 +83,7 @@ The PR leaves draft when the owner approves. **A new commit clears `reviewed` an
 2. Commit and push your own branch. Unpushed work is invisible to the other agent.
 3. Post a `Relay handoff` with the task ID and the exact resulting SHA on the board. A commit can't contain its own SHA.
 
-**If interrupted** (usage running out mid-task): push what you have, then post `BLOCKED` with the partial SHA and the work that remains. The claim stays yours.
+**If you're running out of usage:** follow "Usage and wrap-up" below. **If you're blocked for another reason:** push what you have and post `BLOCKED` with the partial SHA and the remaining work; the claim stays yours.
 
 **After a review only:** post the review on the PR and the `Relay handoff` on the board, and **don't make a docs commit just to acknowledge a review**, because that starts an endless review-of-review loop. The next implementation folds the result into the notes and the tracker.
 
@@ -129,6 +129,25 @@ After completion: who does what next
 User action: none, or the specific decision required
 ```
 
+## Usage and wrap-up
+
+The owner's rule: **never run out of usage mid-task. Wrap up and hand off first.**
+
+- **Check your own usage** at session start, before any substantial piece of work, and **every 5 minutes** while working. **Below 10%, check after every small unit of work.**
+- **Use the lowest remaining percentage** across every quota window your tool shows (e.g. a 5-hour window and a weekly window). Each agent reports only its own usage; neither can see the other's.
+- **If your tool can't show usage, report it as "unknown".** Never invent a number. Then wrap up at the first low-usage warning.
+- **At 5% or less:**
+  1. Start no new task. Stop at a clean point.
+  2. Push partial work to your own branch.
+  3. Record what's complete and what isn't, the checks you actually ran, blockers, the exact SHA and the next steps, in `docs/PROGRESS.md` and the ▶ Next action block if you were implementing.
+  4. Post an explicit `RELEASE` of your claim, plus a `Relay handoff` with `Status: ready_for_implementation` (or the review task) that assigns the **other agent** the remaining authorized work.
+- **A usage handoff is not completion and not sign-off.** It never counts as `ready_for_review`, `reviewed` or done.
+- Review-only turns still use comments only, with no acknowledgement commits.
+- After the handoff, **end your turn.** Don't close the PR, archive the chat, merge or delete branches.
+- **Don't reclaim the work** until your usage has recovered and the board shows the task `open` or assigned to you.
+- **Never spend extra credits** or use reset credits automatically.
+- **If you can't push,** say so in the handoff, along with exactly where the partial work is preserved.
+
 ## Branches
 
 - Each agent pushes only its own branches: `codex/<topic>` or `claude/<topic>`.
@@ -137,7 +156,7 @@ User action: none, or the specific decision required
 
 ## Wake-up mechanisms and limits
 
-- **Codex:** a thread heartbeat named `Agent Office development relay`, created 2026-09-30, checks every 30 minutes. It inspects the current state before acting; it doesn't promise instant execution.
-- **Claude Code:** event-driven. The Claude session subscribes to GitHub activity on every PR it opens or is asked to review, so reviews, comments, pushes and CI results wake it; a `Relay handoff` naming Claude is picked up when it's posted. While a PR waits, it also schedules check-ins, which stop after three quiet ones. **Limits:** it only works while that Claude session exists; it doesn't see PRs it isn't subscribed to; there's no fixed heartbeat.
+- **Codex:** a thread heartbeat named `Agent Office development relay`, created 2026-09-30, checks every 5 minutes, including its usage. It inspects the current state before acting; it doesn't promise instant execution.
+- **Claude Code:** event-driven. The Claude session subscribes to GitHub activity on every PR it opens or is asked to review, so reviews, comments, pushes and CI results wake it; a `Relay handoff` naming Claude is picked up when it's posted. While a PR waits, it also schedules check-ins, which stop after three quiet ones. **Usage visibility:** Claude sees its session's context and token budget, but not the account's plan-level limit, which is reported as "unknown". Claude wraps up when its visible budget reaches 5% or at the first usage-limit warning. **Limits:** it only works while that Claude session exists; it doesn't see PRs it isn't subscribed to; there's no fixed heartbeat.
 - Notes and comments carry state, but they don't wake an agent that isn't running. If a watcher is unavailable or a session is out of quota, report that limitation rather than claiming the work will run automatically.
 - Never add paid, API-backed CI or model runners to work around an inactive session. No automatic merges, deployments, branch deletions or real provider calls without the owner's authorization.

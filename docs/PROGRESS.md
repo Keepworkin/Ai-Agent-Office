@@ -46,6 +46,11 @@ Newest first. "UI changes" describes what you'd see in the browser.
   - `97b9546`: fixes Codex's P2. The live provider disclaimer is targeted by id so the picker can't overwrite it.
   - `73f7162`: self-driving relay. A "Next action" block in `docs/HANDOFF.md` that the owning agent acts on, and matching rules in `AGENTS.md`.
   - `896293d`: this tracker (`docs/PROGRESS.md`), plus a PR-template item to keep it current.
+  - `REQ-usage-wrapup` (owner request, with Codex's additions): "Usage and wrap-up" in `docs/RELAY.md`.
+    - Check usage at session start, before substantial work and every 5 minutes (after each small step below 10%), using the lowest quota window or "unknown".
+    - At 5% or less, push, `RELEASE` and hand the rest to the other agent. That handoff is not completion or sign-off.
+    - No automatic credit spending.
+    - Codex's heartbeat is now every 5 minutes.
   - `d741ef5`, then the review-fix commit: ownership and completion rules in `docs/RELAY.md`: a task-state table with one owner at a time, claims on the relay board (issue #6) that never expire by time, a definition of done per task type, and "when you're done, stop".
   - A merge commit folding in Codex's PR #5 (`3db1a73`), reconciled with `73f7162` into **one** protocol:
     - `docs/RELAY.md` is the rulebook: `Relay handoff` comment format, claim before implementing, and no commits for review-only turns.
