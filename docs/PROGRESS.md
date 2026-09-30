@@ -2,7 +2,7 @@
 
 This is the record of what has been built, what's in progress, and what remains, with a log of every pull request and its UI changes. **Every PR updates this file** (see "Relay" in `AGENTS.md`). For who acts next, see the Next action block at the top of `docs/HANDOFF.md`.
 
-_Last updated: 2026-09-30, `T2-live-startup` PR (Claude Code). `main` = `ab5935b`._
+_Last updated: 2026-09-30, `T4-persistence` PR (Claude Code). `main` = `3d89a50`._
 
 ## Status at a glance
 
@@ -21,13 +21,14 @@ _Last updated: 2026-09-30, `T2-live-startup` PR (Claude Code). `main` = `ab5935b
 - [x] Rule "only claim what you can finish": below about 20% usage, only small tasks; browser work hands off at 10% (PR #7)
 - [x] Robot name tags no longer overlap one another in the tested widths (360–1920 px), states, zoom levels and while walking (PR #8, `T1-name-tags`)
 
+- [x] Live mode shows "CONNECTING…" instead of demo data until the server answers (PR #9, `T2-live-startup`)
+- [x] Codex and Claude Code get robots in Suites 03 and 04 when they report their activity; opt-in hooks in `docs/AGENT-DESKS.md` (PR #9, `T3-agent-desks`)
+
 ### In progress
-- [ ] `T2-live-startup`: live mode no longer shows demo data before the server's first snapshot. The PR is up for Codex's review; its state is on the relay board (issue #6).
-- [ ] `T3-agent-desks`: Codex and Claude Code get robots in Suites 03 and 04, plus a reporting script and opt-in hooks. Added to PR #9 as a second commit, so that finished work isn't held only on this machine.
+- [ ] `T4-persistence`: tasks, activity and agent stats survive a server restart. The PR is up for Codex's review; its state is on the relay board (issue #6).
 
 ### Remaining (in order)
 Task IDs are stable. Claim them on the relay board (issue #6) using exactly these IDs.
-4. [ ] `T4-persistence`: save tasks and activity to disk so a server restart doesn't wipe them
 5. [ ] `T5-real-providers`: try the real Claude and OpenAI APIs once with keys, and record the results
 6. [ ] `T6-tags-over-robots`: a robot standing lower on the map can hide another robot's name tag or bubble (e.g. Quill's "✓ Review" bubble covers Byte's tag at 390 px). This happened before `T1` too. Draw name tags in their own layer above all robots.
 
@@ -42,7 +43,25 @@ Task IDs are stable. Claim them on the relay board (issue #6) using exactly thes
 
 Newest first. "UI changes" describes what you'd see in the browser.
 
-### PR #9, second commit: desks for Codex and Claude Code (`T3-agent-desks`, open)
+### Next PR: saved office state (`T4-persistence`, open)
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `3d89a50`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.
+- **Contents:**
+  - `server/src/office/store.ts` (new): `fileStore(file)`, a JSON file store. It writes to a temporary file and then renames it, so a crash never leaves half a file, and it moves an unreadable file aside.
+  - `server/src/office/office.ts`:
+    - An optional `store` restores tasks, activity and office-agent stats on start.
+    - It saves 0.5 s after any change except streamed tokens, and `flush()` saves immediately.
+    - Work that was queued or running comes back as failed: running steps are marked failed with "The server restarted before this step finished.", pending steps are skipped, and the activity log records it.
+    - Agents waiting on a task in review come back in review.
+  - `server/src/index.ts`: saves to `server/data/office.json` (`OFFICE_DATA_FILE` moves it, `off` disables it) and flushes on SIGINT and SIGTERM.
+  - `.gitignore`: `server/data/`, because task data is private.
+  - `server/test/persistence.test.ts` (new): 5 tests, all using a real temporary file. They cover a full round trip, a restored review that can still be approved, interrupted work marked failed, saving without an explicit flush, and an unreadable file.
+  - `server/README.md`: a "Saved state" section.
+- **UI changes:**
+  - None to the dashboard's code.
+  - After a server restart, the office shows the earlier tasks, review queue, completed count and activity instead of starting empty, plus an "Office restarted: …" entry in Office pulse.
+  - Tasks cut off by the restart show as failed instead of disappearing.
+
+### PR #9, second commit: desks for Codex and Claude Code (`T3-agent-desks`, merged 2026-09-30, merge commit `3d89a50`)
 - **Branch:** `claude/ai-agent-office-repo-9nv3o7`, on top of T2's `7956bdc` in PR #9. Codex hadn't started reviewing PR #9, so this was pushed there rather than held unpushed. **Author:** Claude Code. **Reviewer:** Codex.
 - **Contents:**
   - `dist/navigation.js`: walkable floor for Suites 03 and 04 and their doors off the corridor junction. `scripts/check-navigation.cjs` now checks 196 routes, including into both suites, and that the suite walls still block the hallway.
@@ -65,7 +84,8 @@ Newest first. "UI changes" describes what you'd see in the browser.
   - **Live mode:** a Codex or Claude Code robot appears at a desk in Suite 03 or Suite 04 when that tool reports in, and walks out when it reports `offline`. The suite sign switches from "For Lease" to "Codex" / "Claude Code" with a count of those working. The agent count and roster include them (e.g. "08 agents").
   - **Static demo:** unchanged; the suites stay "For Lease".
 
-### Next PR: no demo data before the live feed connects (`T2-live-startup`, open)
+### PR #9: no demo data before the live feed connects (`T2-live-startup`, merged 2026-09-30, merge commit `3d89a50`)
+- **Review:** Codex. Review 5372157895 at `2ae3089` found one P2 (see the fix above). Re-review 5372278887 at exact head `c802881` found no blocking findings, including its own first-frame recordings: 0 DEMO MODE frames in live mode, the stalled feed falling back at 1.5 s, and the static fallback at 32 ms. CI run 36779494553 was green. Merged by Claude with a merge commit after the owner approved.
 - **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `ab5935b`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.
 - **Problem, measured per frame in headless Chromium:**
   - In live mode, the page showed the demo for about 290 ms (about 675 ms on a slower connection) before the first server snapshot: "DEMO MODE", 3 robots working, 12 tasks completed, and a made-up "Quill finished a draft" event.

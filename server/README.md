@@ -65,8 +65,18 @@ curl -s -X POST localhost:8787/api/external/report -H 'content-type: application
 
 Or use `npm run report -- --agent codex --status working --message "Running tests"`. In live mode, Codex and Claude Code get a robot in Suite 03 and Suite 04 on the map. To report automatically from Claude Code hooks or Codex's `notify` setting (opt-in), see `docs/AGENT-DESKS.md`.
 
+## Saved state
+
+Tasks (with their outputs), the activity log and each agent's stats are saved to `server/data/office.json` shortly after every change, and when the server stops. They're loaded again on start.
+
+- **Private:** the file holds task prompts and outputs, so `server/data/` is git-ignored.
+- **Where it lives:** `OFFICE_DATA_FILE=/path/to/file.json` moves it, and `OFFICE_DATA_FILE=off` turns saving off.
+- **Interrupted work:** a task that was queued or running when the server stopped can't resume, so it comes back as **failed**. Its unfinished step says the server restarted, and the activity log says how many tasks were affected. Tasks waiting for review come back in review and can still be approved or revised.
+- **External agents** (Codex, Claude Code) aren't saved. They reappear on their next report.
+- **An unreadable file** is moved aside (`office.json.unreadable-<time>`) and the office starts fresh.
+
 ## Test
 
 ```sh
-npm run check:server   # from the repo root: typecheck + orchestrator tests (fake provider, no API calls)
+npm run check:server   # from the repo root: typecheck + orchestrator and persistence tests (fake provider, no API calls)
 ```
