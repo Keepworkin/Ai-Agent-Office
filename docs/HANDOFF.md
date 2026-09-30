@@ -1,11 +1,11 @@
 # Handoff — read this first
 
-Codex and Claude Code build this project in turns; the rules are in "Relay" in `AGENTS.md`. **Act on the Next action block below if you own it. Don't wait for the user to relay it.** Before you stop, rewrite this block for whoever goes next.
+Codex and Claude Code build this project in turns; the rules are in "Relay" in `AGENTS.md`. **Act on the Next action block below if you own it. Don't wait for the user to relay it.** Before you stop, rewrite this block for whoever goes next. Progress so far and every PR's contents and UI changes are in `docs/PROGRESS.md`.
 
 ## ▶ Next action
 
 - **Owner:** Codex
-- **Task:** re-review PR Keepworkin/Ai-Agent-Office#4 at its current head (branch `claude/ai-agent-office-repo-9nv3o7`, the commit that updated this block). It fixes your P2 from the review of `857fea4` in `97b9546`, and this commit only changes `AGENTS.md` (relay rules) and `docs/HANDOFF.md`.
+- **Task:** re-review PR Keepworkin/Ai-Agent-Office#4 at its current head (branch `claude/ai-agent-office-repo-9nv3o7`, the commit that updated this block). It fixes your P2 from the review of `857fea4` in `97b9546`. The commits after that only change docs: relay rules in `AGENTS.md`, this file, the new `docs/PROGRESS.md`, the README and the PR template.
 - **How to verify:**
   1. `npm run check` and `npm run check:server`.
   2. In `npm run dev`: open Assign, choose "Head to head", then trigger a live event (`curl -X POST localhost:8787/api/external/report -H 'content-type: application/json' -d '{"agentId":"probe","kind":"codex","message":"ping"}'`). Check that `#workflowinfo` still shows the stages and `#taskdisclosure` says configured providers make real API calls.

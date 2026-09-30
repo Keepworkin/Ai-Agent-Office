@@ -16,8 +16,9 @@ The two tools build this project in turns; whichever one has usage left works wh
 **Before you stop** (task done, or usage running low):
 1. Commit and push. An unpushed change is lost to the other agent.
 2. **Rewrite the Next action block** for whoever goes next: owner, the exact task, the exact commit or PR, how to verify, "done when", and who takes over after that. Make it self-contained, so the next agent can act with no other context.
-3. Post the same next action as a comment on the PR, so it's visible where reviews happen.
-4. End your reply to the user with the same **Next steps** list, saying who owns each step.
+3. **Update `docs/PROGRESS.md`:** tick off finished items, move things between Done, In progress and Remaining, and add or extend your PR's entry in the log. Say what it contains (commits) and **what changed in the UI** from a user's point of view (or "no UI changes").
+4. Post the same next action as a comment on the PR, so it's visible where reviews happen.
+5. End your reply to the user with the same **Next steps** list, saying who owns each step.
 
 **Only the user** approves merges to `main` (see "Merging to `main`"). Everything else — reviewing, fixing, building the next item — the agents hand to each other through the Next action block.
 

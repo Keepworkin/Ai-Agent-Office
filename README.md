@@ -23,6 +23,7 @@ Run `npm run check` for the dashboard's syntax, asset and navigation checks, and
 - `dist/` — authored HTML, CSS, JavaScript and office artwork; keep it tracked.
 - `server/` — Node/TypeScript server that runs the teammates on Claude and ChatGPT and streams live events; see `server/README.md`.
 - `docs/HANDOFF.md` — relay baton between Codex and Claude Code: last session, next steps, how to verify.
+- `docs/PROGRESS.md` — what's done, in progress and remaining, plus a log of every pull request and its UI changes.
 - `dist/navigation.js` — walkable floor polygons, furniture footprints and obstacle-aware A* routing. Coordinates are normalized to the office artwork.
 - `scripts/check-navigation.cjs` — desk/lounge/hallway reachability and segment-clearance checks.
 - `AGENTS.md` — shared instructions for coding agents.

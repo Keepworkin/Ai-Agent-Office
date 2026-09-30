@@ -8,6 +8,7 @@ What behavior changes, and why?
 - [ ] `npm run check:server` (if `server/` changed)
 - [ ] Main affected flow verified in browser
 - [ ] Keyboard and narrow-screen behavior checked where affected
+- [ ] `docs/PROGRESS.md` updated: status, this PR's log entry and its UI changes
 
 ## Cross-agent review
 
