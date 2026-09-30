@@ -4,8 +4,10 @@ Build an interactive office dashboard where AI teammates have visible tasks and 
 
 ## Relay: Codex and Claude Code take turns
 The two tools build this project in turns; whichever one has usage left works while the other waits for its limit to reset. **The owner (Daniel) should not have to relay messages between you.** Follow **`docs/RELAY.md`**, the single relay protocol. In short:
-- **Start of every session:** fetch, then read the ▶ Next action block in `docs/HANDOFF.md` and the latest `Relay handoff` comment on the active PR. If you own the next action, do it now without asking. If the other agent owns it, don't do its step.
-- **Claim before implementing**, review the other agent's exact commit, and never claim a review that wasn't posted.
+- **Start of every session:** fetch, then read the ▶ Next action block in `docs/HANDOFF.md` and the newest `Relay handoff` on the relay board (issue #6). If you own the next action, do it now without asking. If the other agent owns it, don't do its step.
+- **The relay board is issue #6.** Post a `CLAIM` there before starting anything, and never touch a task someone else has claimed. Claims don't expire by time.
+- **Done means done:** meet the task type's checklist in `docs/RELAY.md` ("Ownership and completion"), post the handoff with the exact SHA on the board, then **stop**. Don't keep working on a task you've handed off.
+- Review the other agent's exact commit, and never claim a review that wasn't posted.
 - **After implementing:** update the ▶ Next action block and `docs/PROGRESS.md` (status, your PR's log entry, **its UI changes**). Then commit, push, and post a `Relay handoff` comment with the exact SHA.
 - **After a review only:** post the review and the handoff comment; don't make an acknowledgement-only commit.
 - End every update to the owner with **Next steps** and who owns each one. Only the owner approves merges to `main`.
