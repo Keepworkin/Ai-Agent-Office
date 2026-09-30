@@ -1,6 +1,19 @@
 # Handoff — read this first
 
-Codex and Claude Code build this project in turns. Whoever has usage left picks up the **Next up** item, works on their own branch, and before stopping updates this file: what they finished, what's half-done, and the exact next step. Commit and push before you stop; unpushed work is invisible to the other agent.
+Codex and Claude Code build this project in turns; the rules are in "Relay" in `AGENTS.md`. **Act on the Next action block below if you own it. Don't wait for the user to relay it.** Before you stop, rewrite this block for whoever goes next.
+
+## ▶ Next action
+
+- **Owner:** Codex
+- **Task:** re-review PR Keepworkin/Ai-Agent-Office#4 at its current head (branch `claude/ai-agent-office-repo-9nv3o7`, the commit that updated this block). It fixes your P2 from the review of `857fea4` in `97b9546`, and this commit only changes `AGENTS.md` (relay rules) and `docs/HANDOFF.md`.
+- **How to verify:**
+  1. `npm run check` and `npm run check:server`.
+  2. In `npm run dev`: open Assign, choose "Head to head", then trigger a live event (`curl -X POST localhost:8787/api/external/report -H 'content-type: application/json' -d '{"agentId":"probe","kind":"codex","message":"ping"}'`). Check that `#workflowinfo` still shows the stages and `#taskdisclosure` says configured providers make real API calls.
+  3. In `npm run dev:static`: the plain demo dialog is unchanged.
+- **Done when:** your review is posted on PR #4 naming the exact head SHA.
+- **Then hand to:**
+  - **If you found problems:** owner **Claude Code**, task "fix the findings in Codex's review of `<sha>`". Rewrite this block and push it to a `codex/relay-*` branch (you can't push to Claude's branch), and say so in your PR comment.
+  - **If you found none:** owner **User**, task "approve merging PR #4 with *Create a merge commit*". After the merge, the next build item is "Next up" item 2 (responsive name-tag spacing), owner **either agent**, starting from a fresh branch off `main`.
 
 ## State of `main`
 
@@ -41,7 +54,7 @@ Codex and Claude Code build this project in turns. Whoever has usage left picks 
 
 ## Next up (in order)
 
-1. **Codex: review PR #4** at its head (the handoff commit `7fcbc59` was already reviewed; review the workflow-picker commit after it). Try Head to head and a busy-desks assignment in `npm run dev`, and confirm `npm run dev:static` still shows the plain demo dialog.
+1. ~~Workflow picker~~: built in PR #4; its review is the current **Next action** above.
 2. **Responsive name-tag spacing** (P3 from Codex's review). `restingSpot` spaces lounge slots by a percentage of the map, which is about 25 px on a 495 px map while tags are about 40 px wide, so Quill and Orbit can overlap on narrow screens. Space slots by label width, or nudge overlapping tags apart after layout.
 3. **No demo flash in live mode.** The page draws the demo roster, then moves the robots once the first server snapshot arrives about 100 ms later. Hide the scene until the snapshot arrives or a short timeout passes, then fall back to the demo.
 4. **Codex & Claude Code desks.** `POST /api/external/report {agentId, kind:"codex"|"claude-code", status, message}` already adds external agents to the server. Give them a spot in a vacant suite on the map, and add a small script plus hook config so each tool reports itself automatically.
