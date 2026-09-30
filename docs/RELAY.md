@@ -39,6 +39,7 @@ This is the single relay protocol. The files it uses:
 The PR leaves draft when the owner approves. **A new commit clears `reviewed` and `ready_for_user_merge`:** the new head needs its own review and a fresh gate check.
 
 **Claim rules:**
+- **Check your usage before claiming.** Don't claim a task you can't finish on what you have left (see "Usage and wrap-up").
 - **Check before claiming.** Fetch, then read the board's newest comments, the open PRs, and the remote `codex/*` and `claude/*` branches. Never start a task ID that's already claimed, already in an open PR, or already on a branch.
 - **Re-read the board three times:** right after posting your `CLAIM`, before your first edit, and before you push. If an earlier live claim for the same ID (or overlapping `Scope`) appears, post `RELEASE` and stop.
 - **Claims never expire by time.** A claim ends only with the claimant's done handoff, a `RELEASE`, or the owner reassigning the task on the board. An agent near the end of its usage **releases** its claim and hands the rest to the other agent (see "Usage and wrap-up"). If an agent goes silent without doing that, its claim stands and the other agent works on something else.
@@ -136,6 +137,10 @@ The owner's rule: **never run out of usage mid-task. Wrap up and hand off first.
 - **Check your own usage** at session start, before any substantial piece of work, and **every 5 minutes** while working. **Below 10%, check after every small unit of work.**
 - **Use the lowest remaining percentage** across every quota window your tool shows (e.g. a 5-hour window and a weekly window). Each agent reports only its own usage; neither can see the other's.
 - **If your tool can't show usage, report it as "unknown".** Never invent a number. Then wrap up at the first low-usage warning.
+- **Only claim what you can finish.** Before a `CLAIM`, estimate what the task will use; don't claim it if your remaining usage can't cover the whole thing, including its checks and handoff. As a guide:
+  - **Below about 20%:** claim only small, docs-only or read-only tasks.
+  - **Browser work** (running the app, clicking through flows) uses usage fast. For a task that needs it, wrap up and hand off at **10%**, not 5%.
+  - Usage can drop sharply between checks (Codex once went from 13% to 0% during one browser review), so leave a margin.
 - **At 5% or less:**
   1. Start no new task. Stop at a clean point.
   2. Push partial work to your own branch.

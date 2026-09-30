@@ -2,7 +2,7 @@
 
 This is the record of what has been built, what's in progress, and what remains, with a log of every pull request and its UI changes. **Every PR updates this file** (see "Relay" in `AGENTS.md`). For who acts next, see the Next action block at the top of `docs/HANDOFF.md`.
 
-_Last updated: 2026-09-30, PR #4 after folding in PR #5 (Claude Code)._
+_Last updated: 2026-09-30, after PR #4 merged (`main` = `ed40543`) (Claude Code)._
 
 ## Status at a glance
 
@@ -15,9 +15,12 @@ _Last updated: 2026-09-30, PR #4 after folding in PR #5 (Claude Code)._
 - [x] 4.4 MB of unused images removed, and a guard that fails CI on unused files (PR #1)
 - [x] Robots start at their desk or lounge spot, not piled at the door (PR #1)
 - [x] Codex/Claude relay process, merge-to-`main` rules, and CI for both the office and the server (PR #1)
+- [x] Workflow picker: assign a task to one teammate or a multi-agent workflow, with side-by-side output per stage (PR #4)
+- [x] Live-mode disclaimer fix: the note about real vs. simulated AI calls is correct when the server runs (PR #4)
+- [x] One relay protocol (`docs/RELAY.md`) with the relay board (issue #6), task IDs, completion states, usage and wrap-up rules, and this tracker (PR #4, including Codex's PR #5)
 
 ### In progress
-- [ ] **PR #4:** workflow picker with side-by-side output, disclaimer fix, one relay protocol (Codex's PR #5 integrated) with ownership and completion rules, and this progress file. State: fixes for Codex's review `5367683425` are `ready_for_review`; the live state is on the relay board (issue #6).
+- [ ] `REQ-usage-claim` (docs only): records `main` = `ed40543`, and adds the rule "only claim what you can finish" (below about 20%, only small tasks; browser work hands off at 10%). State is on the relay board (issue #6).
 
 ### Remaining (in order)
 Task IDs are stable. Claim them on the relay board (issue #6) using exactly these IDs.
@@ -28,7 +31,7 @@ Task IDs are stable. Claim them on the relay board (issue #6) using exactly thes
 5. [ ] `T5-real-providers`: try the real Claude and OpenAI APIs once with keys, and record the results
 
 ### Owner-only to-dos (GitHub settings)
-- [ ] Delete the five merged `codex/*` branches (this session can't delete branches)
+- [ ] Delete the six merged `codex/*` branches, including `codex/relay-protocol` (this session can't delete branches)
 - [ ] Turn on branch protection for `main`: require a PR and the `check` and `server` checks, and block force pushes
 - [ ] Turn on "Automatically delete head branches"
 
@@ -38,7 +41,12 @@ Task IDs are stable. Claim them on the relay board (issue #6) using exactly thes
 
 Newest first. "UI changes" describes what you'd see in the browser.
 
-### PR #4: Workflow picker, disclosure fix, self-driving relay, progress tracker (open)
+### Next PR: post-merge record and usage-claim rule (`REQ-usage-claim`, open)
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `ed40543`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.
+- **Contents:** records `main` = `ed40543` in `docs/HANDOFF.md` and here; adds "Only claim what you can finish" to "Usage and wrap-up" in `docs/RELAY.md` and to `AGENTS.md`. It follows the proposal on the relay board after Codex's usage dropped from 13% to 0% during one browser review.
+- **UI changes:** none.
+
+### PR #4: Workflow picker, disclosure fix, self-driving relay, progress tracker (merged 2026-09-30, merge commit `ed40543`)
 - **Branch:** `claude/ai-agent-office-repo-9nv3o7` → `main`. **Author:** Claude Code. **Reviewer:** Codex.
 - **Contents:**
   - `7fcbc59`: post-merge handoff; records `main` = `9329c5f`.
@@ -72,8 +80,8 @@ Newest first. "UI changes" describes what you'd see in the browser.
     - Board claims were overridable by newer notes elsewhere. Now the board is the only authority.
     - "No findings" jumped straight to merge-ready. There are now separate `reviewed`, merge-gate, `ready_for_user_merge`, `integrated` and `done` states, plus task IDs and a `BLOCKED` state for interrupted work.
     - Tracker wording corrected.
-  - Codex's review of the fix commit is pending.
-- **Checks:** CI green through `d741ef5`; 7 live-state tests; 10 server tests.
+  - Codex reviewed the fixes and the usage rules through head `b07aa90`: no blocking findings, both P2s resolved, browser checks passed.
+- **Checks:** CI green on `b07aa90` (run 36731101833); 7 live-state tests; 10 server tests. Merged by Claude with a merge commit after the owner approved.
 
 ### PR #5: Direct relay protocol (folded into PR #4)
 - **Branch:** `codex/relay-protocol` → `claude/ai-agent-office-repo-9nv3o7`. **Author:** Codex. **Reviewer:** Claude Code.
