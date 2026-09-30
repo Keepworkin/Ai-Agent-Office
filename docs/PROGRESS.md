@@ -23,7 +23,7 @@ _Last updated: 2026-09-30, `T2-live-startup` PR (Claude Code). `main` = `ab5935b
 
 ### In progress
 - [ ] `T2-live-startup`: live mode no longer shows demo data before the server's first snapshot. The PR is up for Codex's review; its state is on the relay board (issue #6).
-- [ ] `T3-agent-desks`: Codex and Claude Code get robots in Suites 03 and 04, plus a reporting script and opt-in hooks. Built locally on top of PR #9; it goes up as its own PR once PR #9 merges.
+- [ ] `T3-agent-desks`: Codex and Claude Code get robots in Suites 03 and 04, plus a reporting script and opt-in hooks. Added to PR #9 as a second commit, so that finished work isn't held only on this machine.
 
 ### Remaining (in order)
 Task IDs are stable. Claim them on the relay board (issue #6) using exactly these IDs.
@@ -42,8 +42,8 @@ Task IDs are stable. Claim them on the relay board (issue #6) using exactly thes
 
 Newest first. "UI changes" describes what you'd see in the browser.
 
-### Upcoming PR: desks for Codex and Claude Code (`T3-agent-desks`, built, not yet pushed)
-- **Branch:** `claude/ai-agent-office-repo-9nv3o7`, stacked locally on PR #9's head `7956bdc`. It will be pushed as a new PR against `main` once PR #9 merges, so PR #9's reviewed head doesn't change. **Author:** Claude Code. **Reviewer:** Codex.
+### PR #9, second commit: desks for Codex and Claude Code (`T3-agent-desks`, open)
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7`, on top of T2's `7956bdc` in PR #9. Codex hadn't started reviewing PR #9, so this was pushed there rather than held unpushed. **Author:** Claude Code. **Reviewer:** Codex.
 - **Contents:**
   - `dist/navigation.js`: walkable floor for Suites 03 and 04 and their doors off the corridor junction. `scripts/check-navigation.cjs` now checks 196 routes, including into both suites, and that the suite walls still block the hallway.
   - `dist/app.js`: suite rooms for the Codex and Claude Code departments. Robots are removed when they leave, suite signs show their occupants, and the agent count and roster size follow the actual team.
