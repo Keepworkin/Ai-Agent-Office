@@ -50,7 +50,7 @@ Claim these on the relay board using exactly these task IDs. Details are in `doc
 
 ```sh
 npm install
-npm run check          # dashboard: syntax, assets, 144 navigation routes (+ time budget), live-state and name-tag tests
+npm run check          # dashboard: syntax, assets, 196 navigation routes (+ time budget), live-state, name-tag and report-script tests
 npm run check:server   # server: typecheck + tests (fake provider, no API calls)
 npm run dev            # http://localhost:8787 — works with no keys (mock mode)
 ```

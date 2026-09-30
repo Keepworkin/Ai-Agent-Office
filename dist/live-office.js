@@ -93,6 +93,7 @@ detailContent = function () {
   if (!officeStore.live) { detailKey = null; $('#detail').classList.remove('wide'); return demoDetailContent(); }
   const agent = liveAgent();
   if (!agent) { $('#detail').close(); return; }
+  if (agent.provider === 'external') return externalDetail(agent);
   const task = selectedTask();
   // Rebuilding the markup replaces the buttons, and a click whose press and
   // release land on different elements never fires. So rebuild only when
@@ -127,6 +128,20 @@ detailContent = function () {
   if (output) output.scrollTop = atBottom ? output.scrollHeight : scroll;
   if (cursor && $('#revisionfeedback')) { $('#revisionfeedback').focus(); $('#revisionfeedback').setSelectionRange(...cursor); }
 };
+// Suite for an external agent, by the kind it reported (server stores it as the model); other kinds aren't placed.
+const externalSuite = agent => agent.provider !== 'external' ? null
+  : agent.model === 'codex' ? 'Codex' : agent.model === 'claude-code' ? 'Claude Code' : null;
+function externalDetail(agent) {
+  const key = JSON.stringify(['external', agent.id, agent.name, agent.status, agent.activity, agent.lastActiveAt]);
+  if (key === detailKey && $('#detailbody [data-live-detail]')) return;
+  detailKey = key;
+  $('#detail').classList.remove('wide');
+  $('#detailbody').innerHTML = `<button class="close" aria-label="Close" data-live-detail>×</button><span class="detailavatar">${escape(agent.avatar || '🤖')}</span>
+    <h2>${escape(agent.name)}</h2><p class="muted">${escape(agent.role)} · ${escape(agent.status)}</p>
+    <div class="detailtask"><span class="eyebrow">REPORTED BY THE TOOL ITSELF</span><p>${escape(agent.activity || 'No activity reported yet.')}</p>
+    ${agent.lastActiveAt ? `<span class="small">Last report ${escape(new Date(agent.lastActiveAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</span>` : ''}</div>
+    <p class="small">This desk shows what the tool reports through <code>scripts/report-activity.mjs</code>. The office can't assign it tasks.</p>`;
+}
 function projectSnapshot() {
   agents = initial.map(robot => {
     const agent = officeStore.agents.find(agent => agent.id === robot.id);
@@ -136,6 +151,17 @@ function projectSnapshot() {
     return { ...robot, state: agent.status, role: escape(agent.role) + (agent.mock ? ' · MOCK' : ''),
       task: agent.activity || (task ? `${task.title} · ${task.status}` : 'Ready for a new assignment'), progress: task?.progress || 0 };
   });
+  // Coding agents (Codex, Claude Code) that report their own activity get a robot in their suite while online.
+  const suiteTeams = {};
+  for (const agent of officeStore.agents) {
+    const department = externalSuite(agent);
+    if (!department || agent.status === 'offline') continue;
+    const slot = (suiteTeams[department] = (suiteTeams[department] || 0) + 1) - 1;
+    deskSlots[agent.id] = slot % 3;
+    // app.js interpolates names and roles into markup unescaped; these come from whatever the tool reported.
+    agents.push({ id: agent.id, name: escape(agent.name), role: escape(agent.role), department, emoji: agent.avatar || '🤖',
+      external: true, state: agent.status, task: agent.activity || 'No activity reported yet', progress: 0 });
+  }
   completed = officeStore.tasks.filter(task => task.status === 'done').length;
   events = officeStore.activity.slice(0, 5).map(entry => ({ name: 'Office', text: entry.message,
     time: new Date(entry.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }));
@@ -187,7 +213,7 @@ openTask = function (id) {
   // While connecting, the page doesn't yet know whether assignments go to the server or the demo.
   if (document.body.classList.contains('connecting')) { notify('Connecting to the office…'); return; }
   if (!officeStore.live) return demoOpenTask(id);
-  const available = agents.filter(a => a.state === 'idle');
+  const available = agents.filter(a => a.state === 'idle' && !a.external);
   if (!available.length && !officeStore.workflows.length) { notify('All desks are busy. Approve or stop a task first.'); return; }
   $('#agentselect').innerHTML = available.map(a => `<option value="${a.id}">${a.name} · ${a.department} / ${a.role}</option>`).join('');
   if (id && available.some(a => a.id === id)) $('#agentselect').value = id;

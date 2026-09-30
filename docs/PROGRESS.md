@@ -23,10 +23,10 @@ _Last updated: 2026-09-30, `T2-live-startup` PR (Claude Code). `main` = `ab5935b
 
 ### In progress
 - [ ] `T2-live-startup`: live mode no longer shows demo data before the server's first snapshot. The PR is up for Codex's review; its state is on the relay board (issue #6).
+- [ ] `T3-agent-desks`: Codex and Claude Code get robots in Suites 03 and 04, plus a reporting script and opt-in hooks. Built locally on top of PR #9; it goes up as its own PR once PR #9 merges.
 
 ### Remaining (in order)
 Task IDs are stable. Claim them on the relay board (issue #6) using exactly these IDs.
-3. [ ] `T3-agent-desks`: desks for Codex and Claude Code sessions in a vacant suite, plus scripts so each tool reports its own activity
 4. [ ] `T4-persistence`: save tasks and activity to disk so a server restart doesn't wipe them
 5. [ ] `T5-real-providers`: try the real Claude and OpenAI APIs once with keys, and record the results
 6. [ ] `T6-tags-over-robots`: a robot standing lower on the map can hide another robot's name tag or bubble (e.g. Quill's "✓ Review" bubble covers Byte's tag at 390 px). This happened before `T1` too. Draw name tags in their own layer above all robots.
@@ -41,6 +41,25 @@ Task IDs are stable. Claim them on the relay board (issue #6) using exactly thes
 ## Pull request log
 
 Newest first. "UI changes" describes what you'd see in the browser.
+
+### Upcoming PR: desks for Codex and Claude Code (`T3-agent-desks`, built, not yet pushed)
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7`, stacked locally on PR #9's head `7956bdc`. It will be pushed as a new PR against `main` once PR #9 merges, so PR #9's reviewed head doesn't change. **Author:** Claude Code. **Reviewer:** Codex.
+- **Contents:**
+  - `dist/navigation.js`: walkable floor for Suites 03 and 04 and their doors off the corridor junction. `scripts/check-navigation.cjs` now checks 196 routes, including into both suites, and that the suite walls still block the hallway.
+  - `dist/app.js`: suite rooms for the Codex and Claude Code departments. Robots are removed when they leave, suite signs show their occupants, and the agent count and roster size follow the actual team.
+  - `dist/live-office.js`:
+    - External agents of kind `codex` / `claude-code` that aren't offline become robots in their suite, with names and roles escaped.
+    - Their dialog shows the reported activity and has no task buttons.
+    - The Assign dialog never offers them.
+  - `dist/style.css`: occupied suite signs, compact on narrow maps.
+  - `scripts/report-activity.mjs` (new; `npm run report`): posts a status to `/api/external/report`.
+    - It has a plain mode, a `--claude-hook` mode that reads hook events from stdin, and a `--codex-notify` mode that reads the `notify` argument.
+    - It always exits 0, gives up after 1.5 s, and never sends prompt or reply text.
+  - `scripts/check-report-activity.cjs` (new, in `npm run check`): 4 tests against a fake office.
+  - `docs/AGENT-DESKS.md` (new): opt-in setup for Claude Code hooks and Codex `notify`, with limits. Nothing is enabled in this repo by default.
+- **UI changes:**
+  - **Live mode:** a Codex or Claude Code robot appears at a desk in Suite 03 or Suite 04 when that tool reports in, and walks out when it reports `offline`. The suite sign switches from "For Lease" to "Codex" / "Claude Code" with a count of those working. The agent count and roster include them (e.g. "08 agents").
+  - **Static demo:** unchanged; the suites stay "For Lease".
 
 ### Next PR: no demo data before the live feed connects (`T2-live-startup`, open)
 - **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `ab5935b`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.

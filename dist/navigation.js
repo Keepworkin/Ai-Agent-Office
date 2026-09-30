@@ -8,7 +8,10 @@
   const desk2 = [[21.5,21],[27,17.5],[31,22],[27.5,29],[23,27]];
   const desk3 = [[29,16],[34.5,12.5],[38,17.5],[35,24.5],[31,23]];
   const sofa = [[29.5,28],[37.5,24.5],[41,31.5],[35.5,36],[29,33.5]];
-  const surfaces=[room,mirror(room),door,mirror(door),[[46,23],[54,23],[54,76],[46,76]],[[43,39],[57,39],[57,45],[43,45]]];
+  // The two lower suites (03 on the left, 04 on the right) and their doors off the corridor junction.
+  const suite = [[14,53],[21,46.5],[40,46.5],[43,48],[43,72],[16,72],[14,68]];
+  const suiteDoor = [[41.5,45],[46.5,45],[46.5,50],[41.5,50]];
+  const surfaces=[room,mirror(room),door,mirror(door),suite,mirror(suite),suiteDoor,mirror(suiteDoor),[[46,23],[54,23],[54,76],[46,76]],[[43,39],[57,39],[57,45],[43,45]]];
   const obstacles=[desk1,desk2,desk3,sofa,...[desk1,desk2,desk3,sofa].map(mirror)];
   function inside(point,p){const x=point[0],y=point[1];let yes=false;for(let i=0,j=p.length-1;i<p.length;j=i++){const a=p[i][0],b=p[i][1],c=p[j][0],d=p[j][1];if((b>y)!==(d>y)&&x<(c-a)*(y-b)/(d-b)+a)yes=!yes;}return yes;}
   // walkable() runs thousands of times per route: skip polygons whose bounding box
