@@ -1,25 +1,24 @@
 # Handoff — read this first
 
-The relay rules are in `docs/RELAY.md`. **If you own the ▶ Next action below, do it now; don't wait for the owner to relay it.** Check the relay board (issue #6) for a newer handoff or claim first; the board wins. After implementing, rewrite this block; after a review only, just comment on the PR. What's done and what remains, plus every PR's contents and UI changes, is in `docs/PROGRESS.md`.
+The relay rules are in `docs/RELAY.md`. **If you own the ▶ Next action below, do it now; don't wait for the owner to relay it.** The relay board (issue #6) is the only authority on who owns what; this block is evidence. After implementing, rewrite this block; after a review only, just comment on the PR. What's done and what remains, plus every PR's contents and UI changes, is in `docs/PROGRESS.md`.
 
 ## ▶ Next action
 
+_Evidence only. The relay board (issue #6) is authoritative for ownership._
+
 ```text
 Relay handoff
+Task ID: FIX-PR4-5367683425 → next: REVIEW-PR4@<new head>
 Status: ready_for_review
 Completed by: Claude
-PR / branch / exact head: PR #4, claude/ai-agent-office-repo-9nv3o7, the commit that added the ownership rules (its SHA is posted on the board, issue #6)
-Completed and verified: ownership and completion rules plus relay board issue #6; disclosure fix 97b9546 (reproduced on 857fea4 and verified fixed in the browser); PR #5 (3db1a73) merged in and reconciled into one protocol, docs/RELAY.md; docs/PROGRESS.md added as the single tracker; npm run check and check:server pass
+PR / branch / exact head: PR #4, claude/ai-agent-office-repo-9nv3o7, the commit that fixed review 5367683425 (its SHA is on the board)
+Completed and verified: Codex's two P2s (board-only authority; reviewed ≠ ready_for_user_merge ≠ integrated ≠ done, with merge gates) plus task IDs, BLOCKED for interrupted work, a three-point board re-read, and the tracker wording fixes; npm run check passes
+Merge gates: CI pending on the new head; all commits reviewed except this one; no open findings; up to date with main
 Next owner: Codex
-Next action: review PR #4 at that exact head, covering 97b9546, 73f7162, 896293d, the reconciliation merge and the ownership rules.
-  (1) npm run check and npm run check:server.
-  (2) In npm run dev: Assign → Head to head, then POST /api/external/report. #workflowinfo keeps the stages; #taskdisclosure says configured providers make real API calls.
-  (3) npm run dev:static still shows the plain demo dialog.
-  (4) docs/RELAY.md and AGENTS.md read as one consistent protocol (including the ownership table and definitions of done), and the PR log in docs/PROGRESS.md matches git history.
-  Done when your review names the exact head SHA.
+Next action: REVIEW-PR4@<new head>. Confirm both P2s and the tracker corrections are resolved (docs/RELAY.md, AGENTS.md, docs/PROGRESS.md), then finish the application review still pending from your partial review: in npm run dev, Assign → Head to head, then POST /api/external/report; #workflowinfo keeps the stages, #taskdisclosure says configured providers make real API calls; npm run dev:static is unchanged. Done when the review names the exact head and a handoff is on the board.
 Blockers / untested: real providers, touch devices, screen readers
-After completion: findings → Claude fixes them. No findings → the owner approves merging PR #4 (Create a merge commit), then either agent claims "Next up" item 2 (responsive name tags) on a fresh branch off main.
-User action: none until Codex's review; then merge approval for PR #4
+After completion: findings → changes_requested, owner Claude. No findings → reviewed; ready_for_user_merge only if all merge gates pass; owner User.
+User action: none until then
 ```
 
 ## State of `main`
