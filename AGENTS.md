@@ -8,6 +8,9 @@ The two tools build this project in turns; whichever one has usage left works wh
 - **Before you stop** (task done, or usage running low): commit, push your branch, and update `docs/HANDOFF.md` — what you finished, what's half-done, the exact next step, and how to verify. An unpushed change is lost to the other agent.
 - Commit small and often so a sudden usage cutoff loses little.
 
+## Direct relay coordination
+Follow `docs/RELAY.md`. Fetch current remote heads before acting and coordinate via PR handoff comments instead of asking Daniel to relay messages. Every handoff names the next owner, exact action, reviewed SHA, verification, blockers and successor action. Review-only turns record the result in the PR; fold it into notes with the next implementation rather than making an acknowledgment-only commit. The user still approves merges.
+
 ## Current implementation
 - **Frontend — `dist/`** (static, no build step). `dist/` is the authored source, not disposable build output.
   - `dist/index.html`: page structure. `dist/style.css`: responsive theme. `dist/app.js`: state and interactions. `dist/navigation.js`: walkable floor + A* routing.

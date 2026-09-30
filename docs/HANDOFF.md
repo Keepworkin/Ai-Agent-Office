@@ -2,6 +2,18 @@
 
 Codex and Claude Code build this project in turns. Whoever has usage left picks up the **Next up** item, works on their own branch, and before stopping updates this file: what they finished, what's half-done, and the exact next step. Commit and push before you stop; unpushed work is invisible to the other agent.
 
+## Immediate next steps and owners
+
+Read `docs/RELAY.md` and the latest PR handoff comment before acting. Fetch first; do not rely on screenshots or old local heads.
+
+- **Codex:** review PR #4's disclosure fix `97b9546` (or newer head). Verify the live-provider disclaimer, workflow description through incoming events, and static fallback. Post findings directly to PR #4.
+- **Claude:** review the `codex/relay-protocol` documentation PR and confirm its own watcher is active and follows the shared handoff format.
+- **If fixes are needed:** the implementing agent fixes them; the other agent re-reviews the exact new head.
+- **When review and CI pass:** notify Daniel once for merge approval; do not merge automatically.
+- **After merge:** the next available agent claims responsive name-tag spacing on a fresh main-based branch and names the other as reviewer.
+
+Codex's 30-minute relay heartbeat is active. Claude-side wake-up remains dependent on Claude's watcher; notes alone do not start a session. Routine progress goes in PR comments, not user-carried prompts.
+
 ## State of `main`
 
 - **`main` = `9329c5f`**, merged 2026-09-29 from PR Keepworkin/Ai-Agent-Office#1 with a merge commit, following "Merging to `main`" in `AGENTS.md`.
