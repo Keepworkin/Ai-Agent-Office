@@ -41,7 +41,8 @@ function connectionLabels() {
   $('.legendright').textContent = officeStore.connected ? 'Server activity' : 'Connection lost';
   $('.rosterhead > span').textContent = 'ChatGPT + Claude · Server teammates';
   $('#taskform .muted').textContent = 'Give an available teammate something to focus on.';
-  $('#taskform p.small').textContent = 'Uses the selected agent’s server provider. Mock tags mean simulated output; configured providers make real API calls.';
+  // Target the disclosure by id: #workflowinfo is also a p.small in this form.
+  $('#taskdisclosure').textContent = 'Uses each agent’s server provider. Mock tags mean simulated output; configured providers make real API calls.';
   $('#reset').hidden = true;
   $('#pause').textContent = paused ? '▶ Resume animation' : 'Ⅱ Pause animation';
   $('#newtask').disabled = !officeStore.connected || mutationPending;
