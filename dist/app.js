@@ -44,6 +44,7 @@ function syncScene(){
     m.el.querySelector('.nametag').innerHTML=`<i class="dot ${a.state}"></i>${a.name}`;
     paintCharacter(a,m);
   }
+  spreadNameTags();
   for(const [dept,id] of [['ChatGPT','gptcount'],['Claude','claudecount']]){
     document.getElementById(id).textContent=agents.filter(a=>a.department===dept&&a.state==='working').length+' working';
   }
@@ -68,6 +69,25 @@ function paintCharacter(a,m){
   m.el.style.left=m.x+'%';m.el.style.top=m.y+'%';m.el.style.zIndex=String(10+Math.round(m.y));
   m.el.querySelector('.bubble').textContent=walking?'↟':a.state==='working'?'⌨ ···':a.state==='review'?'✓ Review':m.behavior==='Taking it easy'?'z z':'☕';
 }
+// Name tags hang below each robot. When robots stand close together (narrow screens, a shared lounge, two desks
+// side by side), OfficeNameTags.spread (name-tags.js) nudges overlapping tags sideways or down so every name stays
+// readable. Positions come from the robots' map coordinates and cached tag sizes, so no layout is read per frame.
+function spreadNameTags(){
+  const map=document.getElementById('map');const width=map.clientWidth,height=map.clientHeight;
+  if(!width)return;
+  const items=[...scene.values()].map(m=>{
+    const tag=m.el.querySelector('.nametag');
+    if(!m.tagSize)m.tagSize=[tag.offsetWidth,tag.offsetHeight];
+    return {m,tag,x:m.x/100*width,y:m.y/100*height,w:m.tagSize[0],h:m.tagSize[1]};
+  });
+  OfficeNameTags.spread(items).forEach(({dx,dy},i)=>{
+    const {m,tag}=items[i],shift=[Math.round(dx),Math.round(dy)];
+    if(m.tagShift?.[0]===shift[0]&&m.tagShift?.[1]===shift[1])return;
+    m.tagShift=shift;tag.style.setProperty('--tag-x',shift[0]+'px');tag.style.setProperty('--tag-y',shift[1]+'px');
+  });
+}
+// Tag sizes follow the map's width (font sizes use container units), so re-measure when it changes.
+new ResizeObserver(()=>{for(const m of scene.values())m.tagSize=null;spreadNameTags();}).observe(document.getElementById('map'));
 function resetScene(){scene.clear();document.getElementById('characters').replaceChildren();}
 let previousFrame=0;
 function animateOffice(time){
@@ -92,6 +112,7 @@ function animateOffice(time){
       }
       paintCharacter(a,m);
     }
+    spreadNameTags();
   }
   requestAnimationFrame(animateOffice);
 }

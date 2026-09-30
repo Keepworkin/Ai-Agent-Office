@@ -2,7 +2,7 @@
 
 This is the record of what has been built, what's in progress, and what remains, with a log of every pull request and its UI changes. **Every PR updates this file** (see "Relay" in `AGENTS.md`). For who acts next, see the Next action block at the top of `docs/HANDOFF.md`.
 
-_Last updated: 2026-09-30, after PR #4 merged (`main` = `ed40543`) (Claude Code)._
+_Last updated: 2026-09-30, `T1-name-tags` PR (Claude Code). `main` = `3cc7122`._
 
 ## Status at a glance
 
@@ -18,17 +18,18 @@ _Last updated: 2026-09-30, after PR #4 merged (`main` = `ed40543`) (Claude Code)
 - [x] Workflow picker: assign a task to one teammate or a multi-agent workflow, with side-by-side output per stage (PR #4)
 - [x] Live-mode disclaimer fix: the note about real vs. simulated AI calls is correct when the server runs (PR #4)
 - [x] One relay protocol (`docs/RELAY.md`) with the relay board (issue #6), task IDs, completion states, usage and wrap-up rules, and this tracker (PR #4, including Codex's PR #5)
+- [x] Rule "only claim what you can finish": below about 20% usage, only small tasks; browser work hands off at 10% (PR #7)
 
 ### In progress
-- [ ] `REQ-usage-claim` (docs only): records `main` = `ed40543`, and adds the rule "only claim what you can finish" (below about 20%, only small tasks; browser work hands off at 10%). State is on the relay board (issue #6).
+- [ ] `T1-name-tags`: name tags no longer overlap at any screen width. The PR is up for Codex's review; its state is on the relay board (issue #6).
 
 ### Remaining (in order)
 Task IDs are stable. Claim them on the relay board (issue #6) using exactly these IDs.
-1. [ ] `T1-name-tags`: robot name tags overlap on narrow screens (Codex's P3)
 2. [ ] `T2-live-startup`: live mode briefly shows the demo robots (about 0.1 s) before server data arrives
 3. [ ] `T3-agent-desks`: desks for Codex and Claude Code sessions in a vacant suite, plus scripts so each tool reports its own activity
 4. [ ] `T4-persistence`: save tasks and activity to disk so a server restart doesn't wipe them
 5. [ ] `T5-real-providers`: try the real Claude and OpenAI APIs once with keys, and record the results
+6. [ ] `T6-tags-over-robots`: a robot standing lower on the map can hide another robot's name tag or bubble (e.g. Quill's "✓ Review" bubble covers Byte's tag at 390 px). This happened before `T1` too. Draw name tags in their own layer above all robots.
 
 ### Owner-only to-dos (GitHub settings)
 - [ ] Delete the six merged `codex/*` branches, including `codex/relay-protocol` (this session can't delete branches)
@@ -41,8 +42,23 @@ Task IDs are stable. Claim them on the relay board (issue #6) using exactly thes
 
 Newest first. "UI changes" describes what you'd see in the browser.
 
-### Next PR: post-merge record and usage-claim rule (`REQ-usage-claim`, open)
+### Next PR: name tags never overlap (`T1-name-tags`, open)
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `3cc7122`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.
+- **Contents:**
+  - `dist/name-tags.js` (new): `OfficeNameTags.spread`, a DOM-free layout step. Tags are placed top to bottom; one that would overlap slides sideways (at most half its width, so it stays under its robot), otherwise drops just below the tag it hits.
+  - `dist/app.js`: `spreadNameTags()` runs after each scene update and animation frame, from the robots' map coordinates and cached tag sizes (re-measured when the map resizes, e.g. zoom). No layout reads per frame; about 0.01 ms per call.
+  - `dist/style.css`: tags move by `--tag-x` / `--tag-y`.
+  - `scripts/check-name-tags.cjs` (new, part of `npm run check`): 5 tests, including the 390 px lounge case and 2000 random crowds with no overlaps.
+- **UI changes:**
+  - **Name tags never overlap**, at any width or zoom, standing or walking. Measured before: overlaps at every width up to 1024 px, even for desks at 390 px, and in 60 of 60 samples while robots walked at 390 px. After: none at 360–1920 px in any state, and 0 of 60 while walking.
+  - In a crowded lounge, the outer robots' tags share a row and the centre robot's tag sits just below.
+  - Desktop widths (1280 px and up) look the same as before, because nothing overlapped there.
+  - Clicking a moved tag still opens that robot.
+- **Known, not in this PR:** another robot's body or bubble can still cover a tag (`T6-tags-over-robots`); this was already the case before.
+
+### PR #7: post-merge record and usage-claim rule (`REQ-usage-claim`, merged 2026-09-30, merge commit `3cc7122`)
 - **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `ed40543`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.
+- **Review:** Codex, exact head `a40726e` (review 5370716521): no blocking findings. CI green (run 36762637896).
 - **Contents:** records `main` = `ed40543` in `docs/HANDOFF.md` and here; adds "Only claim what you can finish" to "Usage and wrap-up" in `docs/RELAY.md` and to `AGENTS.md`. It follows the proposal on the relay board after Codex's usage dropped from 13% to 0% during one browser review.
 - **UI changes:** none.
 

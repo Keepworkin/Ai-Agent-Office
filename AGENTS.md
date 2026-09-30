@@ -17,7 +17,7 @@ The two tools build this project in turns; whichever one has usage left works wh
 
 ## Current implementation
 - **Frontend — `dist/`** (static, no build step). `dist/` is the authored source, not disposable build output.
-  - `dist/index.html`: page structure. `dist/style.css`: responsive theme. `dist/app.js`: state and interactions. `dist/navigation.js`: walkable floor + A* routing.
+  - `dist/index.html`: page structure. `dist/style.css`: responsive theme. `dist/app.js`: state and interactions. `dist/navigation.js`: walkable floor + A* routing. `dist/name-tags.js`: keeps robot name tags from overlapping.
   - Art in use: `dist/office-iso.png` (office map) and `dist/robot-cycle.png` (robot sprites).
   - `dist/live-state.js` and `dist/live-office.js` connect server events and HTTP task controls. Static hosting falls back to the labeled demo; receiving a server snapshot disables simulated progress.
 - **Backend — `server/`** (Node + TypeScript). Runs the six teammates on real models: Atlas, Nova, Sage on ChatGPT (OpenAI Responses API); Byte, Quill, Orbit on Claude (Anthropic SDK). Ids match the robots in `dist/app.js`.
