@@ -1,19 +1,26 @@
 # Handoff — read this first
 
-Codex and Claude Code build this project in turns; the rules are in "Relay" in `AGENTS.md`. **Act on the Next action block below if you own it. Don't wait for the user to relay it.** Before you stop, rewrite this block for whoever goes next. Progress so far and every PR's contents and UI changes are in `docs/PROGRESS.md`.
+The relay rules are in `docs/RELAY.md`. **If you own the ▶ Next action below, do it now; don't wait for the owner to relay it.** Check the active PR for a newer `Relay handoff` comment first. After implementing, rewrite this block; after a review only, just comment on the PR. What's done and what remains, plus every PR's contents and UI changes, is in `docs/PROGRESS.md`.
 
 ## ▶ Next action
 
-- **Owner:** Codex
-- **Task:** re-review PR Keepworkin/Ai-Agent-Office#4 at its current head (branch `claude/ai-agent-office-repo-9nv3o7`, the commit that updated this block). It fixes your P2 from the review of `857fea4` in `97b9546`. The commits after that only change docs: relay rules in `AGENTS.md`, this file, the new `docs/PROGRESS.md`, the README and the PR template.
-- **How to verify:**
-  1. `npm run check` and `npm run check:server`.
-  2. In `npm run dev`: open Assign, choose "Head to head", then trigger a live event (`curl -X POST localhost:8787/api/external/report -H 'content-type: application/json' -d '{"agentId":"probe","kind":"codex","message":"ping"}'`). Check that `#workflowinfo` still shows the stages and `#taskdisclosure` says configured providers make real API calls.
-  3. In `npm run dev:static`: the plain demo dialog is unchanged.
-- **Done when:** your review is posted on PR #4 naming the exact head SHA.
-- **Then hand to:**
-  - **If you found problems:** owner **Claude Code**, task "fix the findings in Codex's review of `<sha>`". Rewrite this block and push it to a `codex/relay-*` branch (you can't push to Claude's branch), and say so in your PR comment.
-  - **If you found none:** owner **User**, task "approve merging PR #4 with *Create a merge commit*". After the merge, the next build item is "Next up" item 2 (responsive name-tag spacing), owner **either agent**, starting from a fresh branch off `main`.
+```text
+Relay handoff
+Status: ready_for_review
+Completed by: Claude
+PR / branch / exact head: PR #4, claude/ai-agent-office-repo-9nv3o7, the merge commit that folded in PR #5 (its SHA is posted in the PR #4 comment)
+Completed and verified: disclosure fix 97b9546 (reproduced on 857fea4 and verified fixed in the browser); PR #5 (3db1a73) merged in and reconciled into one protocol, docs/RELAY.md; docs/PROGRESS.md added as the single tracker; npm run check and check:server pass
+Next owner: Codex
+Next action: review PR #4 at that exact head, covering 97b9546, 73f7162, 896293d and the reconciliation merge.
+  (1) npm run check and npm run check:server.
+  (2) In npm run dev: Assign → Head to head, then POST /api/external/report. #workflowinfo keeps the stages; #taskdisclosure says configured providers make real API calls.
+  (3) npm run dev:static still shows the plain demo dialog.
+  (4) docs/RELAY.md and AGENTS.md read as one consistent protocol, and the PR log in docs/PROGRESS.md matches git history.
+  Done when your review names the exact head SHA.
+Blockers / untested: real providers, touch devices, screen readers
+After completion: findings → Claude fixes them. No findings → the owner approves merging PR #4 (Create a merge commit), then either agent claims "Next up" item 2 (responsive name tags) on a fresh branch off main.
+User action: none until Codex's review; then merge approval for PR #4
+```
 
 ## State of `main`
 

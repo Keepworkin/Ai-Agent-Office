@@ -2,7 +2,7 @@
 
 This is the record of what has been built, what's in progress, and what remains, with a log of every pull request and its UI changes. **Every PR updates this file** (see "Relay" in `AGENTS.md`). For who acts next, see the Next action block at the top of `docs/HANDOFF.md`.
 
-_Last updated: 2026-09-30, PR #4 (Claude Code)._
+_Last updated: 2026-09-30, PR #4 after folding in PR #5 (Claude Code)._
 
 ## Status at a glance
 
@@ -17,7 +17,7 @@ _Last updated: 2026-09-30, PR #4 (Claude Code)._
 - [x] Codex/Claude relay process, merge-to-`main` rules, and CI for both the office and the server (PR #1)
 
 ### In progress
-- [ ] **PR #4:** workflow picker with side-by-side output, disclaimer fix, self-driving relay notes and this progress file. Waiting on Codex's re-review, then the owner's merge approval.
+- [ ] **PR #4:** workflow picker with side-by-side output, disclaimer fix, one relay protocol (Codex's PR #5 folded in) and this progress file. Waiting on Codex's review of the new head, then the owner's merge approval.
 
 ### Remaining (in order)
 1. [ ] Robot name tags overlap on narrow screens (Codex's P3)
@@ -44,7 +44,11 @@ Newest first. "UI changes" describes what you'd see in the browser.
   - `857fea4`: workflow picker, stage grouping helpers and their tests.
   - `97b9546`: fixes Codex's P2. The live provider disclaimer is targeted by id so the picker can't overwrite it.
   - `73f7162`: self-driving relay. A "Next action" block in `docs/HANDOFF.md` that the owning agent acts on, and matching rules in `AGENTS.md`.
-  - This tracker (`docs/PROGRESS.md`), plus a PR-template item to keep it current.
+  - `896293d`: this tracker (`docs/PROGRESS.md`), plus a PR-template item to keep it current.
+  - A merge commit folding in Codex's PR #5 (`3db1a73`), reconciled with `73f7162` into **one** protocol:
+    - `docs/RELAY.md` is the rulebook: `Relay handoff` comment format, claim before implementing, and no commits for review-only turns.
+    - `AGENTS.md` has one short Relay section pointing to it.
+    - `docs/HANDOFF.md` has a single ▶ Next action block in the handoff format.
 - **UI changes:**
   - **Assign dialog** (live mode): new "How should the team work?" menu, with "One teammate" or a server workflow ("Claude writes → ChatGPT checks", "ChatGPT researches → Claude builds", "Head to head", "Full team").
     - Choosing a workflow hides the teammate menu and shows who works in each stage, e.g. *Stage 1: Quill (Claude) + Atlas (ChatGPT) → Stage 2: Orbit (Claude)*.
@@ -53,8 +57,18 @@ Newest first. "UI changes" describes what you'd see in the browser.
   - **Task dialog:** output is grouped by stage ("Stage 1 · side by side"). Parallel agents appear in two columns, with Claude in orange and ChatGPT in green, each headed "name · provider · MOCK · status". Multi-agent tasks get a wider (900 px) dialog, and the columns stack on phones.
   - **Disclaimer text** (live mode): now reads "Uses each agent's server provider. Mock tags mean simulated output; configured providers make real API calls." Before, the demo-only text was left showing.
   - **Static demo:** unchanged.
-- **Reviews:** Codex found no problems with `7fcbc59`. Its review of `857fea4` found one P2, fixed in `97b9546`. The re-review of the head is pending.
+- **Reviews:**
+  - Codex found no problems with `7fcbc59`.
+  - Its review of `857fea4` found one P2, fixed in `97b9546`.
+  - Claude reviewed Codex's PR #5: one P2, two competing protocols, resolved by the reconciliation merge.
+  - Codex's review of the new head is pending.
 - **Checks:** CI green through `73f7162`; 7 live-state tests; 10 server tests.
+
+### PR #5: Direct relay protocol (folded into PR #4)
+- **Branch:** `codex/relay-protocol` → `claude/ai-agent-office-repo-9nv3o7`. **Author:** Codex. **Reviewer:** Claude Code.
+- **Contents:** `3db1a73`, which adds `docs/RELAY.md` (the handoff comment format, claim-before-implementing, no commits for review-only turns, and each agent's wake-up mechanism and its limits), plus pointers in `AGENTS.md` and `docs/HANDOFF.md`.
+- **UI changes:** none.
+- **Review:** one P2. It duplicated the relay protocol from `73f7162` (two owner blocks). It was merged into PR #4's branch and reconciled there, with Codex's rules forming the base of `docs/RELAY.md`.
 
 ### PR #1: Live server, integration, fixes and relay (merged 2026-09-29, merge commit `9329c5f`)
 - **Branch:** `claude/ai-agent-office-repo-9nv3o7` → `main`. **Authors:** Claude Code, with Codex's PRs #2 and #3 included. **Reviewers:** each agent reviewed the other's commits, through head `057d0fa`.
