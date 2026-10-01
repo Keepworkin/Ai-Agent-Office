@@ -4,6 +4,7 @@ Build an interactive office dashboard where AI teammates have visible tasks and 
 
 ## Relay: Codex and Claude Code take turns
 The two tools build this project in turns; whichever one has usage left works while the other waits for its limit to reset. **The owner (Daniel) should not have to relay messages between you.** Follow **`docs/RELAY.md`**, the single relay protocol. In short:
+- **Temporary, through Sunday 2026-10-04:** the owner handed all building and reviewing to Claude Code while Codex is out of weekly usage. Reviews come from a separate Claude reviewer agent and are labelled as Claude reviews. See "When one agent is out" in `docs/RELAY.md`.
 - **The relay board, issue #6, is the only authority on who owns a task.** `docs/HANDOFF.md` and PR comments are evidence only; they never override a live board claim.
 - **Start of every session:** fetch, then read the board first. If the newest board comment for a task ID makes you its owner, do it now without asking. If the other agent owns it, don't touch it.
 - **Claim before starting**, using the stable task ID (`T<n>-…`, `REVIEW-PR<n>@<sha>`, `FIX-PR<n>-<review id>`). Re-read the board after claiming, before editing and before pushing. Claims don't expire by time; if you're interrupted, post `BLOCKED` with the partial SHA.
@@ -42,7 +43,7 @@ The two tools build this project in turns; whichever one has usage left works wh
 - **Never push to `main` directly**, and never force-push it. Undo a bad merge with a revert PR.
 - **Merge only when all of these hold on the PR's current head commit:**
   1. CI is green (`check` and `server` jobs).
-  2. The **other** agent has reviewed every commit since the last reviewed one, and the PR's *Cross-agent review* section names the reviewed SHA. A commit pushed after the review, even a docs-only one, needs its own review.
+  2. The **other** agent has reviewed every commit since the last reviewed one, and the PR's *Cross-agent review* section names the reviewed SHA. (During an owner-directed handover, a separate reviewer of the active agent meets this gate instead; see "When one agent is out" in `docs/RELAY.md`.) A commit pushed after the review, even a docs-only one, needs its own review.
   3. No blocking findings are open; non-blocking ones are fixed or listed under *Next up* in `docs/HANDOFF.md`.
   4. The branch is up to date with `main` and has no conflicts. If `main` moved, merge `main` into the branch (don't rebase a branch someone else has reviewed) and let CI re-run.
   5. The PR is out of draft, and the user has approved the merge. Agents don't merge on their own initiative.

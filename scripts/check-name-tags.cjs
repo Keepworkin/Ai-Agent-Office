@@ -50,3 +50,30 @@ test('no overlaps in 2000 random crowds',()=>{
     moves.forEach((m,i)=>{assert(m.dy>=0,'tags only move down');assert(Math.abs(m.dx)<=tags[i].w/2,'tags stay under their robot');});
   }
 });
+
+test('fixed boxes are avoided but never moved',()=>{
+  const fixed=[{x:100,y:100,w:41,h:17}];
+  const tags=[tag(100,100),tag(160,100)];
+  const moves=spread(tags,2,fixed);
+  assertNoOverlap([...fixed,...tags],[{dx:0,dy:0},...moves]);
+  assert.deepEqual(moves[1],{dx:0,dy:0},'a tag clear of the fixed box stays put');
+  for(let run=0;run<500;run++){
+    const fixedBoxes=Array.from({length:3},()=>({x:Math.random()*300,y:Math.random()*200,w:40,h:16}));
+    const free=Array.from({length:5},()=>({x:Math.random()*300,y:Math.random()*200,w:40,h:16}));
+    const m=spread(free,2,fixedBoxes);
+    // Fixed boxes may overlap each other; only the moved tags must stay clear of everything.
+    const boxesOf=(t,mv)=>({left:t.x+mv.dx-t.w/2,right:t.x+mv.dx+t.w/2,top:t.y+mv.dy,bottom:t.y+mv.dy+t.h});
+    const all=[...fixedBoxes.map(f=>boxesOf(f,{dx:0,dy:0}))],moved=free.map((t,i)=>boxesOf(t,m[i]));
+    moved.forEach((b,i)=>[...all,...moved.filter((_,j)=>j!==i)].forEach(o=>
+      assert(!(b.left<o.right&&o.left<b.right&&b.top<o.bottom&&o.top<b.bottom),'a moved tag overlaps')));
+  }
+});
+
+test('reach widens how far a label may slide sideways',()=>{
+  const tags=[tag(100,100),tag(110,100)];
+  assert(Math.abs(spread(tags)[1].dx)<=tags[1].w/2,'default reach is half a width');
+  const wide=spread(tags,2,[],1);
+  assertNoOverlap(tags,wide);
+  assert.equal(wide[1].dy,0,'with a full-width reach it slides instead of dropping');
+  assert(Math.abs(wide[1].dx)<=tags[1].w);
+});

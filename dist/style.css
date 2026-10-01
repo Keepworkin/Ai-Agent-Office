@@ -9,7 +9,7 @@ main{max-width:none}.pageheading{padding:22px 0}h1{font-size:30px}.stats{margin-
 .character .avatar{position:absolute;bottom:-.4cqw;left:0;width:calc(var(--person-height)*.75);height:var(--person-height);min-width:0;min-height:0;transform:translateX(-50%);filter:none;animation:none!important}
 .walker{display:block;width:100%;height:100%;background-image:url('robot-cycle.png');background-size:400% 200%;background-repeat:no-repeat;transform-origin:50% 92%}
 .character .ground-shadow{position:absolute;left:0;top:0;width:2cqw;height:.65cqw;border-radius:50%;background:#17232250;filter:blur(1px);transform:translate(-50%,-50%);z-index:-1}
-.character .bubble{position:absolute;bottom:calc(var(--person-height) + 3px);left:0;transform:translateX(-50%);margin:0}
+.character .bubble{position:absolute;bottom:calc(var(--person-height) + 3px);left:0;transform:translate(calc(-50% + var(--bubble-x,0px)),var(--bubble-y,0px));margin:0}
 .character .nametag{position:absolute;top:5px;left:0;transform:translate(calc(-50% + var(--tag-x,0px)),var(--tag-y,0px));margin:0}
 .character .tooltip{left:0;bottom:calc(var(--person-height) + 26px)}
 /* Articulated gait: independent legs, planted-foot timing and a stable torso. */
@@ -24,3 +24,11 @@ main{max-width:none}.pageheading{padding:22px 0}h1{font-size:30px}.stats{margin-
 .connectinglabel{display:none;color:var(--muted);font-size:11px;letter-spacing:1px;border:1px solid var(--line);border-radius:5px;padding:6px 8px}.connecting .connectinglabel{display:inline-block}.connecting .demo{display:none}.connecting :is(#stats,#characters,#activity,.reviewbox,#roster,#teamgrid,.sidebottom p,.legendright,.deptcount){visibility:hidden}
 .lease.occupied{background:#1b2230f0;color:var(--text);border-color:var(--lime)}.lease.occupied span{color:var(--muted)}.lease.occupied small{color:#c2cfdf}
 @container(max-width:650px){.lease.occupied small{display:none}.lease.occupied{padding:.6cqw 1.6cqw}}
+/* Each robot used to be its own stacking layer, so a robot lower on the map hid the tags and bubbles of robots behind it.
+   Characters no longer form a layer: bodies stack by depth (z 10-110, set in app.js), shadows sit under them, and every
+   bubble, name tag and tooltip is drawn above all bodies. */
+.character{isolation:auto;z-index:auto}.character:hover,.character:focus-visible{z-index:auto!important}
+.character .ground-shadow{z-index:5}.character .bubble{z-index:200}.character .nametag{z-index:210}.character .tooltip{z-index:300}
+.character:hover .nametag,.character:focus-visible .nametag{z-index:220}
+/* A hovered or focused robot comes to the front, body included (its depth is an inline z-index set in app.js). */
+.character:hover .avatar,.character:focus-visible .avatar{z-index:150!important}

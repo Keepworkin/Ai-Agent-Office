@@ -2,7 +2,13 @@
 
 This is the record of what has been built, what's in progress, and what remains, with a log of every pull request and its UI changes. **Every PR updates this file** (see "Relay" in `AGENTS.md`). For who acts next, see the Next action block at the top of `docs/HANDOFF.md`.
 
-_Last updated: 2026-09-30, `T4-persistence` PR (Claude Code). `main` = `3d89a50`._
+_Last updated: 2026-10-01, `T6-tags-over-robots` PR (Claude Code). `main` = `b52e475`. **Through Sunday 2026-10-04, Claude Code builds and a separate Claude reviewer agent reviews** (owner's decision; see "When one agent is out" in `docs/RELAY.md`)._
+
+**Product direction (owner, 2026-10-01):**
+- No paid model API calls and no API-key setup.
+- The office should work with the owner's existing personal ChatGPT, Claude, Codex and Claude Code accounts and show what's running.
+- Signing in to those apps doesn't by itself give the office access to their conversations, so only supported ways of reporting activity are in scope; no bypassing platform restrictions.
+- Mock providers stay for development.
 
 ## Status at a glance
 
@@ -24,13 +30,17 @@ _Last updated: 2026-09-30, `T4-persistence` PR (Claude Code). `main` = `3d89a50`
 - [x] Live mode shows "CONNECTING…" instead of demo data until the server answers (PR #9, `T2-live-startup`)
 - [x] Codex and Claude Code get robots in Suites 03 and 04 when they report their activity; opt-in hooks in `docs/AGENT-DESKS.md` (PR #9, `T3-agent-desks`)
 
+- [x] Tasks, activity and agent stats survive a server restart; interrupted work comes back as failed; unreadable save files are moved aside (PR #10, `T4-persistence`)
+
 ### In progress
-- [ ] `T4-persistence`: tasks, activity and agent stats survive a server restart. The PR is up for Codex's review; its state is on the relay board (issue #6).
+- [ ] `T6-tags-over-robots`: name tags and bubbles are never hidden behind robots or each other. The PR is up for an independent review; its state is on the relay board (issue #6).
 
 ### Remaining (in order)
 Task IDs are stable. Claim them on the relay board (issue #6) using exactly these IDs.
-5. [ ] `T5-real-providers`: try the real Claude and OpenAI APIs once with keys, and record the results
-6. [ ] `T6-tags-over-robots`: a robot standing lower on the map can hide another robot's name tag or bubble (e.g. Quill's "✓ Review" bubble covers Byte's tag at 390 px). This happened before `T1` too. Draw name tags in their own layer above all robots.
+- ~~`T5-real-providers`~~: **dropped** by the owner on 2026-10-01 (no paid API calls).
+7. [ ] `T7-personal-accounts`: show activity from the owner's personal ChatGPT, Claude, Codex and Claude Code use, through supported reporting only.
+   - **Already works:** Codex and Claude Code can report themselves through hooks (`docs/AGENT-DESKS.md`).
+   - **Open question for the owner:** should conversations happen inside the office, or should the office track activity while he works in the usual apps? Asked directly by Claude.
 
 ### Owner-only to-dos (GitHub settings)
 - [ ] Delete the six merged `codex/*` branches, including `codex/relay-protocol` (this session can't delete branches)
@@ -43,7 +53,33 @@ Task IDs are stable. Claim them on the relay board (issue #6) using exactly thes
 
 Newest first. "UI changes" describes what you'd see in the browser.
 
-### Next PR: saved office state (`T4-persistence`, open)
+### Next PR: labels never hidden (`T6-tags-over-robots`, open)
+- **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `b52e475`) → `main`. **Author:** Claude Code. **Reviewer:** an independent Claude review agent, because Codex is out until its weekly reset (see "When one agent is out" in `docs/RELAY.md`).
+- **Problem, measured:** each robot was its own stacking layer, so a robot lower on the map hid the tags and bubbles of robots behind it, and neighbouring bubbles clipped each other.
+  - At 390 px, tags or bubbles were covered in every state, and in 40 of 40 samples while robots walked.
+  - At 1440 px, it happened in 26 of 40 samples while walking.
+- **Contents:**
+  - `dist/style.css`: characters no longer form stacking layers. Only the bodies stack by depth (z 10–110); shadows sit under them; bubbles (200), name tags (210) and tooltips (300) are above every body. Bubbles move by `--bubble-x` / `--bubble-y`.
+  - `dist/app.js`: the depth z-index moves from the character to its body. `spreadNameTags()` also spreads bubbles upwards (the same layout on a flipped vertical axis), avoiding the already-placed name tags. Bubble sizes are re-measured when the text changes (☕, z z, ✓ Review, ⌨ ···).
+  - `dist/name-tags.js`: `spread(tags, gap, fixed)` takes optional fixed boxes to avoid.
+  - `scripts/check-name-tags.cjs`: a new test that fixed boxes are avoided but never moved (500 random cases).
+- **UI changes:**
+  - Every name tag and bubble is readable. With 5 sample points per label, none is covered at 390, 768 or 1440 px in the initial, all-idle, all-working and all-review states, or in 40 samples while walking at 390 and 1440 px.
+  - In a crowded lounge, bubbles fan out upwards instead of overlapping. Quill's "✓ Review" bubble no longer hides Byte's tag.
+  - Tooltips still appear above everything, and clicking a robot's body or tag still opens it.
+- **Fixes Codex's earlier P3** about bubbles and bodies covering tags (noted in PR #8's review).
+- **Review:** a separate Claude reviewer agent looked at `aef0a57` while Codex is out. It found no blocking findings and confirmed the coverage numbers and that 36 of 36 clicks open the right robot. It raised one P2 and three P3s, fixed in the next commit:
+  - **P2:** the upward bubble spread had no ceiling. At 320, 360 and 375 px, bubbles over the top desk row went 2–12 px past the map's top edge, where they were clipped and couldn't be scrolled to.
+    - Bubbles are now clamped to the map's top edge.
+    - Bubbles (not tags) may also slide sideways up to a full width (`spread`'s new `reach` parameter), so the clamp rarely matters.
+    - Reproduced first; after the fix, no clipping at 320–768 px.
+    - Known limit: at 320 and 360 px with everyone working, one pair of identical "⌨ ···" bubbles at the top desks can still overlap. Names stay readable.
+  - **P3:** hovering or focusing a robot brings its body to the front again.
+  - **P3:** a tag is re-measured when its name changes (live suite robots report their own names).
+  - **P3:** `AGENTS.md` merge gate 2 now points to the handover rule.
+
+### PR #10: saved office state (`T4-persistence`, merged 2026-10-01, merge commit `b52e475`)
+- **Review:** Codex. Review 5379621730 at `0054d75` found one P2 (malformed records crashed startup), fixed in `8d3eb9a`. Re-review 5380041491 at exact head `8d3eb9a` found no blocking findings. CI run 36866666126 was green. Merged by Claude with a merge commit after the owner approved.
 - **Branch:** `claude/ai-agent-office-repo-9nv3o7` (restarted from `main` `3d89a50`) → `main`. **Author:** Claude Code. **Reviewer:** Codex.
 - **Contents:**
   - `server/src/office/store.ts` (new): `fileStore(file)`, a JSON file store. It writes to a temporary file and then renames it, so a crash never leaves half a file, and it moves an unreadable file aside.

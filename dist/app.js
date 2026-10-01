@@ -45,7 +45,8 @@ function syncScene(){
     } else if(m.state!==a.state){m.state=a.state;routeTo(a,m);}
     m.el.setAttribute('aria-label',`${a.name}, ${a.department}, ${label(a.state)}: ${a.task}`);
     m.el.querySelector('.tooltip').innerHTML=`<b>${a.name} · ${a.department}</b>${escape(a.task)}<br><span>${label(a.state)}${a.state==='working'?' · '+Math.floor(a.progress)+'%':''}</span>`;
-    m.el.querySelector('.nametag').innerHTML=`<i class="dot ${escape(a.state)}"></i>${a.name}`;
+    const tagHtml=`<i class="dot ${escape(a.state)}"></i>${a.name}`;
+    if(m.tagHtml!==tagHtml){m.tagHtml=tagHtml;m.el.querySelector('.nametag').innerHTML=tagHtml;m.tagSize=null;}
     paintCharacter(a,m);
   }
   // Robots that left the office (e.g. a coding agent that went offline) leave the floor too.
@@ -81,8 +82,12 @@ function paintCharacter(a,m){
   sprite.style.setProperty('--left-angle',`${swing*13}deg`);
   sprite.style.setProperty('--right-angle',`${-swing*13}deg`);
   sprite.style.setProperty('--body-angle',`${swing*1.4}deg`);
-  m.el.style.left=m.x+'%';m.el.style.top=m.y+'%';m.el.style.zIndex=String(10+Math.round(m.y));
-  m.el.querySelector('.bubble').textContent=walking?'↟':a.state==='working'?'⌨ ···':a.state==='review'?'✓ Review':m.behavior==='Taking it easy'?'z z':'☕';
+  m.el.style.left=m.x+'%';m.el.style.top=m.y+'%';
+  // Only the bodies are stacked by depth; name tags and bubbles sit above every robot (see style.css).
+  m.el.querySelector('.avatar').style.zIndex=String(10+Math.round(m.y));
+  const bubbleText=walking?'↟':a.state==='working'?'⌨ ···':a.state==='review'?'✓ Review':m.behavior==='Taking it easy'?'z z':'☕';
+  // A new bubble text has a new width, so the label layout re-measures it.
+  if(m.bubbleText!==bubbleText){m.bubbleText=bubbleText;m.el.querySelector('.bubble').textContent=bubbleText;m.bubbleSize=null;}
 }
 // Name tags hang below each robot. When robots stand close together (narrow screens, a shared lounge, two desks
 // side by side), OfficeNameTags.spread (name-tags.js) nudges overlapping tags sideways or down so every name stays
@@ -92,17 +97,37 @@ function spreadNameTags(){
   if(!width)return;
   const items=[...scene.values()].map(m=>{
     const tag=m.el.querySelector('.nametag');
-    if(!m.tagSize)m.tagSize=[tag.offsetWidth,tag.offsetHeight];
-    return {m,tag,x:m.x/100*width,y:m.y/100*height,w:m.tagSize[0],h:m.tagSize[1]};
+    if(!m.tagSize)m.tagSize=[tag.offsetWidth,tag.offsetHeight,tag.offsetTop,m.el.querySelector('.avatar').offsetHeight];
+    // Tags hang offsetTop px below the feet (the character's anchor point).
+    return {m,tag,x:m.x/100*width,y:m.y/100*height+m.tagSize[2],w:m.tagSize[0],h:m.tagSize[1]};
   });
   OfficeNameTags.spread(items).forEach(({dx,dy},i)=>{
     const {m,tag}=items[i],shift=[Math.round(dx),Math.round(dy)];
     if(m.tagShift?.[0]===shift[0]&&m.tagShift?.[1]===shift[1])return;
     m.tagShift=shift;tag.style.setProperty('--tag-x',shift[0]+'px');tag.style.setProperty('--tag-y',shift[1]+'px');
   });
+  // Bubbles sit above the heads, so they're spread upwards: the same layout on a flipped vertical axis, where a box's
+  // top is minus its real bottom edge. The placed tags are fixed obstacles, so a bubble never lands on a name.
+  const flip=(x,top,w,h)=>({x,y:-(top+h),w,h});
+  const placedTags=items.map(t=>flip(t.x+t.m.tagShift[0],t.y+t.m.tagShift[1],t.w,t.h));
+  const bubbles=[...scene.values()].map(m=>{
+    const bubble=m.el.querySelector('.bubble');
+    if(!m.bubbleSize)m.bubbleSize=[bubble.offsetWidth,bubble.offsetHeight];
+    // The bubble's bottom edge floats 3 px above the head (see .character .bubble in style.css).
+    const bottom=m.y/100*height-m.tagSize[3]-3;
+    return {m,bubble,...flip(m.x/100*width,bottom-m.bubbleSize[1],m.bubbleSize[0],m.bubbleSize[1])};
+  });
+  OfficeNameTags.spread(bubbles,2,placedTags,1).forEach(({dx,dy},i)=>{
+    const {m,bubble,y,h}=bubbles[i];
+    // Never push a bubble above the map's top edge, where the viewport would clip it out of reach (top-row desks
+    // on narrow screens). It may then sit over another label, which is better than being cut off.
+    const top=-y-h,shift=[Math.round(dx),Math.max(-Math.round(dy),-Math.floor(top))];
+    if(m.bubbleShift?.[0]===shift[0]&&m.bubbleShift?.[1]===shift[1])return;
+    m.bubbleShift=shift;bubble.style.setProperty('--bubble-x',shift[0]+'px');bubble.style.setProperty('--bubble-y',shift[1]+'px');
+  });
 }
-// Tag sizes follow the map's width (font sizes use container units), so re-measure when it changes.
-new ResizeObserver(()=>{for(const m of scene.values())m.tagSize=null;spreadNameTags();}).observe(document.getElementById('map'));
+// Tag and bubble sizes follow the map's width (font sizes use container units), so re-measure when it changes.
+new ResizeObserver(()=>{for(const m of scene.values())m.tagSize=m.bubbleSize=null;spreadNameTags();}).observe(document.getElementById('map'));
 function resetScene(){scene.clear();document.getElementById('characters').replaceChildren();}
 let previousFrame=0;
 function animateOffice(time){
