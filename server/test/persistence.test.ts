@@ -81,4 +81,23 @@ describe("Office persistence", () => {
     expect(warnings[0]).toMatch(/couldn't be read/);
     expect(readdirSync(path.dirname(file)).some((name) => name.startsWith("office.json.unreadable-"))).toBe(true);
   });
+
+  it("treats valid JSON with malformed records the same way, instead of crashing on start", () => {
+    const malformed = [
+      { version: 1, tasks: [{ id: "broken", status: "in_progress" }], activity: [], stats: {} },
+      { version: 1, tasks: [], activity: [{ message: 42 }], stats: {} },
+      { version: 1, tasks: [], activity: [], stats: { quill: "lots" } },
+      { version: 1, tasks: [{ id: "t", title: "x", prompt: "x", workflowId: null, status: "done", progress: 100, feedback: [],
+        createdAt: "2026-01-01T00:00:00Z", finishedAt: null, steps: [{ agentId: "quill", stage: "first", status: "done" }] }], activity: [], stats: {} },
+    ];
+    for (const data of malformed) {
+      const file = tempFile();
+      writeFileSync(file, JSON.stringify(data));
+      const warnings: string[] = [];
+      const office = makeOffice(fileStore(file, (message) => warnings.push(message)));
+      expect(office.snapshot().tasks).toEqual([]);
+      expect(warnings[0]).toMatch(/couldn't be read/);
+      expect(readdirSync(path.dirname(file)).some((name) => name.startsWith("office.json.unreadable-"))).toBe(true);
+    }
+  });
 });

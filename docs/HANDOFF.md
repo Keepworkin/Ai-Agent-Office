@@ -8,21 +8,20 @@ _Evidence only. The relay board (issue #6) is authoritative for ownership._
 
 ```text
 Relay handoff
-Task ID: T4-persistence → next: REVIEW-PR<n>@<head> (PR number and SHA are on the board)
+Task ID: FIX-PR10-5379621730 (T4-persistence) → next: REVIEW-PR10@<head> (exact SHA on the board)
 Status: ready_for_review
 Completed by: Claude
-PR / branch / exact head: new PR from claude/ai-agent-office-repo-9nv3o7 (based on main 3d89a50); exact head on the board
+PR / branch / exact head: PR #10, claude/ai-agent-office-repo-9nv3o7; exact head on the board
 Completed and verified:
-- Server only. New server/src/office/store.ts (JSON file store, atomic write, unreadable file moved aside).
-- The Office takes an optional store. It restores tasks, activity and office-agent stats; saves 0.5 s after any non-delta change; flush() saves now. Queued or running work comes back as failed, with the reason on the step and in activity. Review tasks come back in review.
-- index.ts saves to server/data/office.json (OFFICE_DATA_FILE moves it, "off" disables it) and flushes on SIGINT/SIGTERM. server/data/ is git-ignored.
-- npm run check:server: typecheck + 16 tests (5 new, on a real temp file).
-- End-to-end on a real server: done, review and in-progress tasks → SIGTERM → restart: done stays done, review stays review (Atlas "needs review"), the running full-team task comes back failed, stats are kept, and Office pulse says "Office restarted: restored 3 tasks; 1 unfinished was marked failed." The dashboard showed this with no page errors.
-Merge gates: CI pending on the new head; not yet reviewed; no open findings; up to date with main
+- T4: tasks, activity and office-agent stats survive a restart; interrupted work comes back failed; review tasks come back in review; server/data/ is git-ignored. Your review 5379621730 confirmed the normal restart path.
+- P2 fix: store.ts invalidSavedOffice checks every task, step, activity entry and stats record. Malformed-but-valid JSON is moved aside, the warning says why, and the office starts fresh instead of crashing on every start.
+- Reproduced first with a failing regression test covering 4 malformed files. On a real server, your exact file boots (0 tasks, file moved aside), and a normal restart afterwards works.
+- npm run check:server: typecheck + 17 tests.
+Merge gates: CI pending on the new head; the fix isn't reviewed yet; no open findings; up to date with main
 Next owner: Codex
-Next action: REVIEW-PR<n>@<head>. Check the restore rules (interrupted work, review tasks, stats), the save timing and atomic write, that server/data stays out of git, and one real restart with npm run dev. Done when the review names the exact head and a handoff is on the board.
-Blockers / untested: A hard kill (SIGKILL, power loss) loses changes from the last 0.5 s. External agents aren't saved (they re-register). Not tested on Windows file-rename semantics.
-After completion: findings → changes_requested, owner Claude. No findings → ready_for_user_merge if all gates pass, owner User. Then T5-real-providers (needs the owner's API keys) or T6-tags-over-robots.
+Next action: REVIEW-PR10@<head>. Re-run your malformed-file probe (the server should boot and move the file aside) and check that the shape checks accept what the office itself saves. Done when the review names the exact head and a handoff is on the board.
+Blockers / untested: A hard kill loses the last 0.5 s of changes. Windows rename behaviour isn't tested.
+After completion: findings → changes_requested, owner Claude. No findings → ready_for_user_merge if all gates pass, owner User. Then T6-tags-over-robots (T5 needs the owner's API keys).
 User action: none until then
 ```
 

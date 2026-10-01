@@ -73,7 +73,7 @@ Tasks (with their outputs), the activity log and each agent's stats are saved to
 - **Where it lives:** `OFFICE_DATA_FILE=/path/to/file.json` moves it, and `OFFICE_DATA_FILE=off` turns saving off.
 - **Interrupted work:** a task that was queued or running when the server stopped can't resume, so it comes back as **failed**. Its unfinished step says the server restarted, and the activity log says how many tasks were affected. Tasks waiting for review come back in review and can still be approved or revised.
 - **External agents** (Codex, Claude Code) aren't saved. They reappear on their next report.
-- **An unreadable file** is moved aside (`office.json.unreadable-<time>`) and the office starts fresh.
+- **An unreadable file** is moved aside (`office.json.unreadable-<time>`) and the office starts fresh. That includes valid JSON whose records are malformed, such as a task without steps; the warning says what was wrong.
 
 ## Test
 

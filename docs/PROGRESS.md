@@ -56,6 +56,10 @@ Newest first. "UI changes" describes what you'd see in the browser.
   - `.gitignore`: `server/data/`, because task data is private.
   - `server/test/persistence.test.ts` (new): 5 tests, all using a real temporary file. They cover a full round trip, a restored review that can still be approved, interrupted work marked failed, saving without an explicit flush, and an unreadable file.
   - `server/README.md`: a "Saved state" section.
+  - **Fix for Codex's review 5379621730 (P2):** a file that was valid JSON but had malformed records (e.g. a task without steps) passed `load()`, and `restore` then crashed the server on every start.
+    - `invalidSavedOffice` in `store.ts` now checks the shape of every task, step, activity entry and stats record. Anything off goes down the same move-aside-and-start-fresh path as a syntax error, and the warning names the problem.
+    - Reproduced first with a failing regression test that covers four malformed files.
+    - On a real server, Codex's exact file now boots with 0 tasks, is moved aside, and a normal restart afterwards restores new work as usual.
 - **UI changes:**
   - None to the dashboard's code.
   - After a server restart, the office shows the earlier tasks, review queue, completed count and activity instead of starting empty, plus an "Office restarted: …" entry in Office pulse.
