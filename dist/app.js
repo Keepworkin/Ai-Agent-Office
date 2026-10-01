@@ -45,7 +45,8 @@ function syncScene(){
     } else if(m.state!==a.state){m.state=a.state;routeTo(a,m);}
     m.el.setAttribute('aria-label',`${a.name}, ${a.department}, ${label(a.state)}: ${a.task}`);
     m.el.querySelector('.tooltip').innerHTML=`<b>${a.name} · ${a.department}</b>${escape(a.task)}<br><span>${label(a.state)}${a.state==='working'?' · '+Math.floor(a.progress)+'%':''}</span>`;
-    m.el.querySelector('.nametag').innerHTML=`<i class="dot ${escape(a.state)}"></i>${a.name}`;
+    const tagHtml=`<i class="dot ${escape(a.state)}"></i>${a.name}`;
+    if(m.tagHtml!==tagHtml){m.tagHtml=tagHtml;m.el.querySelector('.nametag').innerHTML=tagHtml;m.tagSize=null;}
     paintCharacter(a,m);
   }
   // Robots that left the office (e.g. a coding agent that went offline) leave the floor too.
@@ -116,8 +117,11 @@ function spreadNameTags(){
     const bottom=m.y/100*height-m.tagSize[3]-3;
     return {m,bubble,...flip(m.x/100*width,bottom-m.bubbleSize[1],m.bubbleSize[0],m.bubbleSize[1])};
   });
-  OfficeNameTags.spread(bubbles,2,placedTags).forEach(({dx,dy},i)=>{
-    const {m,bubble}=bubbles[i],shift=[Math.round(dx),-Math.round(dy)];
+  OfficeNameTags.spread(bubbles,2,placedTags,1).forEach(({dx,dy},i)=>{
+    const {m,bubble,y,h}=bubbles[i];
+    // Never push a bubble above the map's top edge, where the viewport would clip it out of reach (top-row desks
+    // on narrow screens). It may then sit over another label, which is better than being cut off.
+    const top=-y-h,shift=[Math.round(dx),Math.max(-Math.round(dy),-Math.floor(top))];
     if(m.bubbleShift?.[0]===shift[0]&&m.bubbleShift?.[1]===shift[1])return;
     m.bubbleShift=shift;bubble.style.setProperty('--bubble-x',shift[0]+'px');bubble.style.setProperty('--bubble-y',shift[1]+'px');
   });

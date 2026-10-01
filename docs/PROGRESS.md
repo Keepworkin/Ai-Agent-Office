@@ -68,6 +68,15 @@ Newest first. "UI changes" describes what you'd see in the browser.
   - In a crowded lounge, bubbles fan out upwards instead of overlapping. Quill's "✓ Review" bubble no longer hides Byte's tag.
   - Tooltips still appear above everything, and clicking a robot's body or tag still opens it.
 - **Fixes Codex's earlier P3** about bubbles and bodies covering tags (noted in PR #8's review).
+- **Review:** a separate Claude reviewer agent looked at `aef0a57` while Codex is out. It found no blocking findings and confirmed the coverage numbers and that 36 of 36 clicks open the right robot. It raised one P2 and three P3s, fixed in the next commit:
+  - **P2:** the upward bubble spread had no ceiling. At 320, 360 and 375 px, bubbles over the top desk row went 2–12 px past the map's top edge, where they were clipped and couldn't be scrolled to.
+    - Bubbles are now clamped to the map's top edge.
+    - Bubbles (not tags) may also slide sideways up to a full width (`spread`'s new `reach` parameter), so the clamp rarely matters.
+    - Reproduced first; after the fix, no clipping at 320–768 px.
+    - Known limit: at 320 and 360 px with everyone working, one pair of identical "⌨ ···" bubbles at the top desks can still overlap. Names stay readable.
+  - **P3:** hovering or focusing a robot brings its body to the front again.
+  - **P3:** a tag is re-measured when its name changes (live suite robots report their own names).
+  - **P3:** `AGENTS.md` merge gate 2 now points to the handover rule.
 
 ### PR #10: saved office state (`T4-persistence`, merged 2026-10-01, merge commit `b52e475`)
 - **Review:** Codex. Review 5379621730 at `0054d75` found one P2 (malformed records crashed startup), fixed in `8d3eb9a`. Re-review 5380041491 at exact head `8d3eb9a` found no blocking findings. CI run 36866666126 was green. Merged by Claude with a merge commit after the owner approved.

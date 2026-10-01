@@ -30,3 +30,5 @@ main{max-width:none}.pageheading{padding:22px 0}h1{font-size:30px}.stats{margin-
 .character{isolation:auto;z-index:auto}.character:hover,.character:focus-visible{z-index:auto!important}
 .character .ground-shadow{z-index:5}.character .bubble{z-index:200}.character .nametag{z-index:210}.character .tooltip{z-index:300}
 .character:hover .nametag,.character:focus-visible .nametag{z-index:220}
+/* A hovered or focused robot comes to the front, body included (its depth is an inline z-index set in app.js). */
+.character:hover .avatar,.character:focus-visible .avatar{z-index:150!important}

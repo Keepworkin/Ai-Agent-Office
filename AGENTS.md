@@ -43,7 +43,7 @@ The two tools build this project in turns; whichever one has usage left works wh
 - **Never push to `main` directly**, and never force-push it. Undo a bad merge with a revert PR.
 - **Merge only when all of these hold on the PR's current head commit:**
   1. CI is green (`check` and `server` jobs).
-  2. The **other** agent has reviewed every commit since the last reviewed one, and the PR's *Cross-agent review* section names the reviewed SHA. A commit pushed after the review, even a docs-only one, needs its own review.
+  2. The **other** agent has reviewed every commit since the last reviewed one, and the PR's *Cross-agent review* section names the reviewed SHA. (During an owner-directed handover, a separate reviewer of the active agent meets this gate instead; see "When one agent is out" in `docs/RELAY.md`.) A commit pushed after the review, even a docs-only one, needs its own review.
   3. No blocking findings are open; non-blocking ones are fixed or listed under *Next up* in `docs/HANDOFF.md`.
   4. The branch is up to date with `main` and has no conflicts. If `main` moved, merge `main` into the branch (don't rebase a branch someone else has reviewed) and let CI re-run.
   5. The PR is out of draft, and the user has approved the merge. Agents don't merge on their own initiative.

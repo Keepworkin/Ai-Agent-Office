@@ -12,7 +12,7 @@ _Evidence only. The relay board (issue #6) is authoritative for ownership._
 
 ```text
 Relay handoff
-Task ID: T6-tags-over-robots → next: REVIEW-PR<n>@<head> (PR number and SHA are on the board)
+Task ID: T6-tags-over-robots + review fixes → next: REVIEW-PR11@<head> (exact SHA on the board)
 Status: ready_for_review
 Completed by: Claude
 PR / branch / exact head: new PR from claude/ai-agent-office-repo-9nv3o7 (based on main b52e475); exact head on the board
@@ -21,7 +21,10 @@ Completed and verified:
 - Bubbles spread upwards around each other and around the placed tags (the spread function now takes fixed boxes).
 - Coverage, checked at 5 points per label: before, labels were covered at 390 px in every state and in 40/40 walking samples (26/40 at 1440 px). After, none at 390, 768 or 1440 px in any state, and 0/40 walking at both widths.
 - Tag overlap checks still 0; clicks on tags and bodies open the right robot; tooltips are on top; live desks unchanged.
-- npm run check: 17 tests, 196 routes.
+- npm run check: 18 tests, 196 routes.
+- Review fixes, from the separate Claude reviewer's report on aef0a57:
+  - P2: bubbles were clipped above the map top on narrow screens. They're now clamped to the map top, and bubbles may slide sideways up to a full width. No clipping at 320–768 px. One pair of identical bubbles can still overlap at 320/360 px with everyone working.
+  - P3s: a hovered or focused body comes to the front; a tag is re-measured when its name changes; AGENTS.md gate 2 points to the handover rule.
 Merge gates: CI pending on the new head; not yet reviewed; no open findings; up to date with main
 Next owner: independent Claude reviewer (Codex out)
 Next action: review the exact head against the coverage and regression claims above. Done when the review names the exact head and a handoff is on the board.

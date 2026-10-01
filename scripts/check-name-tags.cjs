@@ -68,3 +68,12 @@ test('fixed boxes are avoided but never moved',()=>{
       assert(!(b.left<o.right&&o.left<b.right&&b.top<o.bottom&&o.top<b.bottom),'a moved tag overlaps')));
   }
 });
+
+test('reach widens how far a label may slide sideways',()=>{
+  const tags=[tag(100,100),tag(110,100)];
+  assert(Math.abs(spread(tags)[1].dx)<=tags[1].w/2,'default reach is half a width');
+  const wide=spread(tags,2,[],1);
+  assertNoOverlap(tags,wide);
+  assert.equal(wide[1].dy,0,'with a full-width reach it slides instead of dropping');
+  assert(Math.abs(wide[1].dx)<=tags[1].w);
+});
