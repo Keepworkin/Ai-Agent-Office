@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import type { ProviderRegistry } from "../providers/index.js";
+import type { OfficeStore, SavedOffice } from "./store.js";
 import type {
   ActivityEntry,
   AgentConfig,
@@ -30,15 +31,83 @@ export class Office {
   private queues = new Map<string, Promise<unknown>>();
   private aborts = new Map<string, AbortController>();
   private events = new EventEmitter();
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     roster: AgentConfig[],
     workflows: Workflow[],
     private readonly providers: ProviderRegistry,
+    private readonly store?: OfficeStore,
   ) {
     this.events.setMaxListeners(0);
     for (const config of roster) this.addAgent(config);
     for (const wf of workflows) this.workflows.set(wf.id, wf);
+    if (store) {
+      const saved = store.load();
+      if (saved) this.restore(saved);
+      // Streamed tokens arrive many times a second; the finished step is saved through its task event.
+      this.events.on("event", (event: OfficeEvent) => { if (event.type !== "delta") this.scheduleSave(); });
+    }
+  }
+
+  // ---- persistence --------------------------------------------------------
+
+  /** Writes the office to its store now. Changes are otherwise saved shortly after they happen. */
+  flush() {
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = null;
+    if (!this.store) return;
+    const saved: SavedOffice = {
+      version: 1,
+      savedAt: now(),
+      tasks: [...this.tasks.values()],
+      activity: this.activity,
+      stats: Object.fromEntries([...this.agents.values()].filter((a) => a.provider !== "external").map((a) => [a.id, a.stats])),
+    };
+    try {
+      this.store.save(saved);
+    } catch (err) {
+      console.warn(`Couldn't save office data: ${(err as Error).message}`);
+    }
+  }
+
+  private scheduleSave() {
+    if (this.saveTimer) return;
+    this.saveTimer = setTimeout(() => this.flush(), 500);
+    this.saveTimer.unref?.();
+  }
+
+  /**
+   * Brings back what a previous run saved. Work that was queued or running when the server stopped can't
+   * resume (its provider call died with the process), so it's marked failed rather than shown as still going.
+   */
+  private restore(saved: SavedOffice) {
+    let interrupted = 0;
+    for (const task of saved.tasks) {
+      if (task.status === "queued" || task.status === "in_progress") {
+        interrupted++;
+        for (const step of task.steps) {
+          if (step.status === "working") {
+            Object.assign(step, { status: "failed", error: "The server restarted before this step finished.", finishedAt: now() });
+          } else if (step.status === "pending") {
+            step.status = "skipped";
+          }
+        }
+        Object.assign(task, { status: "failed", finishedAt: now() });
+        task.progress = taskProgress(task);
+      }
+      this.tasks.set(task.id, task);
+    }
+    this.activity = saved.activity.slice(-MAX_ACTIVITY);
+    for (const [id, stats] of Object.entries(saved.stats)) {
+      const agent = this.agents.get(id);
+      if (agent) agent.stats = stats;
+    }
+    for (const agent of this.agents.values()) {
+      if (agent.provider !== "external") agent.status = this.restingStatus(agent.id);
+    }
+    this.log(`Office restarted: restored ${saved.tasks.length} task${saved.tasks.length === 1 ? "" : "s"}` +
+      (interrupted ? `; ${interrupted} unfinished ${interrupted === 1 ? "was" : "were"} marked failed` : "") + ".");
   }
 
   // ---- reads --------------------------------------------------------------

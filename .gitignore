@@ -7,3 +7,5 @@ server/dist/
 .sites-runtime/
 *.tar.gz
 *.log
+# Saved office state: task prompts and outputs are private.
+server/data/
