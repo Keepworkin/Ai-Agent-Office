@@ -153,6 +153,21 @@ The owner's rule: **never run out of usage mid-task. Wrap up and hand off first.
 - **Never spend extra credits** or use reset credits automatically.
 - **If you can't push,** say so in the handoff, along with exactly where the partial work is preserved.
 
+## When one agent is out for a while
+
+The owner can hand **both roles to one agent** while the other is out of usage for days (e.g. its weekly limit).
+
+**In effect now:** on 2026-10-01 the owner handed all building and reviewing to Claude Code **through Sunday 2026-10-04 (America/New_York)**, unless he changes it (board comment 5932844992, `REQ-claude-week-ownership`). Codex's heartbeat is paused.
+
+While a handover is in effect:
+
+- **The board records the handover.** The owner's decision is posted as a board comment naming the active agent and when it ends. Board claims and handoffs continue as usual; the absent agent claims nothing.
+- **Reviews come from a separate reviewer.** The implementing session never reviews its own work. Instead, a fresh reviewer that didn't write the change (for Claude Code, a separate review agent with no access to the implementing session's reasoning) reviews the **exact head** and posts its verdict on the PR.
+  - The review is labelled honestly as a Claude review, e.g. "Claude review by a separate reviewer agent (Codex out)", never presented as a Codex review.
+  - Findings are fixed and re-reviewed the same way.
+- **Merge gate 2** ("reviewed by the other agent") is met by that separate Claude review for the duration. The owner still approves every merge, deployment and branch deletion; the handover isn't blanket merge authorization.
+- **When the absent agent returns,** it may review anything merged during the handover, and its findings are fixed as follow-ups.
+
 ## Branches
 
 - Each agent pushes only its own branches: `codex/<topic>` or `claude/<topic>`.
